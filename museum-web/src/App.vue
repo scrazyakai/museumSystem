@@ -238,6 +238,7 @@ const menuItems = [
 <template>
   <div class="museum-app">
     <!-- Header -->
+    <!-- Header -->
     <header class="header">
       <div class="header-content">
         <h1 class="header-title">博物馆</h1>
@@ -260,14 +261,27 @@ const menuItems = [
 
       <!-- 右侧网格 -->
       <div class="right-grid">
-        <div 
-          v-for="(item, index) in menuItems" 
-          :key="index"
-          class="grid-item"
-          @click="scrollToSection(item)"
-        >
-          <div class="item-icon">{{ item.icon }}</div>
-          <div class="item-label">{{ item.label }}</div>
+        <div class="grid-row">
+          <div 
+            v-for="(item, index) in [menuItems[0], menuItems[1], menuItems[2]]" 
+            :key="index"
+            class="grid-item"
+            @click="scrollToSection(item)"
+          >
+            <div class="item-icon">{{ item.icon }}</div>
+            <div class="item-label">{{ item.label }}</div>
+          </div>
+        </div>
+        <div class="grid-row">
+          <div 
+            v-for="(item, index) in [menuItems[3], menuItems[4], menuItems[5]]" 
+            :key="index + 3"
+            class="grid-item"
+            @click="scrollToSection(item)"
+          >
+            <div class="item-icon">{{ item.icon }}</div>
+            <div class="item-label">{{ item.label }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -501,7 +515,6 @@ const menuItems = [
 /* Hero 区域样式 */
 .hero-section {
   display: flex;
-  flex-direction: column;
   gap: 20px;
   padding: 20px;
   background-color: #f4f4f4;
@@ -513,7 +526,7 @@ const menuItems = [
   background-color: white;
   border-radius: 8px;
   padding: 20px;
-  width: 100%;
+  flex: 0 0 500px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -559,10 +572,16 @@ const menuItems = [
 /* 右侧网格样式 */
 .right-grid {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grid-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
   gap: 16px;
+  flex: 1;
 }
 
 .grid-item {
@@ -817,7 +836,7 @@ const menuItems = [
 
 /* 底部二维码区域样式 */
 .footer {
-  background-color: #333;
+  background-color: #b03128;
   color: white;
   padding: 40px 20px;
   margin-top: 40px;
