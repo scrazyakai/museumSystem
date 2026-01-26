@@ -76,7 +76,15 @@ const router = createRouter({
       component: () => import('@/views/admin/AdminUserManage.vue'),
       meta: { requiresAuth: true, authType: 'admin' }
     },
-    
+
+    // 评论管理（管理端）
+    {
+      path: '/admin/comments',
+      name: 'AdminCommentManage',
+      component: () => import('@/views/admin/AdminCommentManage.vue'),
+      meta: { requiresAuth: true, authType: 'admin' }
+    },
+
     // 根路径重定向到博物馆首页
     {
       path: '/',

@@ -131,7 +131,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="600px"
+      width="1350px"
       @close="handleDialogClose"
     >
       <el-form
@@ -211,14 +211,6 @@
           </div>
         </el-form-item>
 
-        <el-form-item label="展品描述">
-          <Editor
-            v-model="formData.description!"
-            height="300px"
-            placeholder="请输入展品描述..."
-          />
-        </el-form-item>
-
         <el-form-item label="开始时间">
           <el-date-picker
             v-model="formData.startTime"
@@ -236,6 +228,15 @@
             placeholder="选择结束时间"
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DDTHH:mm:ss"
+          />
+        </el-form-item>
+
+        <el-form-item label="展品描述">
+          <Editor
+            v-if="dialogVisible"
+            v-model="formData.description!"
+            height="300px"
+            placeholder="请输入展品描述..."
           />
         </el-form-item>
       </el-form>

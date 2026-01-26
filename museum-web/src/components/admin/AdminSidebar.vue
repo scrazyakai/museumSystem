@@ -29,6 +29,11 @@
         <el-icon><User /></el-icon>
         <template #title>用户管理</template>
       </el-menu-item>
+
+      <el-menu-item index="comments">
+        <el-icon><ChatDotRound /></el-icon>
+        <template #title>评论管理</template>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -36,7 +41,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Platform, DataAnalysis, Collection, User } from '@element-plus/icons-vue'
+import { Platform, DataAnalysis, Collection, User, ChatDotRound } from '@element-plus/icons-vue'
 
 const props = defineProps<{
   collapsed: boolean
@@ -53,6 +58,7 @@ const activeMenu = computed(() => {
   const path = route.path
   if (path === '/admin/items') return 'items'
   if (path === '/admin/users') return 'users'
+  if (path === '/admin/comments') return 'comments'
   if (path === '/admin') return 'dashboard'
   return 'dashboard'
 })
@@ -67,6 +73,9 @@ const handleSelect = (index: string) => {
       break
     case 'users':
       router.push('/admin/users')
+      break
+    case 'comments':
+      router.push('/admin/comments')
       break
   }
 }

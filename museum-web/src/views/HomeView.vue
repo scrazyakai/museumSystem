@@ -331,9 +331,10 @@ const qualityImages = [
     </header>
 
     <!-- Hero 区域 -->
-    <div class="hero-section">
-      <!-- 左侧卡片 -->
-      <div class="left-card">
+    <div class="main-container">
+      <div class="hero-section">
+        <!-- 左侧卡片 -->
+        <div class="left-card">
         <div class="date-section">
           <div class="date-text">{{ currentDate }}</div>
           <div class="weekday-text">{{ weekday }}</div>
@@ -550,6 +551,7 @@ const qualityImages = [
         </div>
       </div>
     </div>
+    </div>
 
     <!-- 底部二维码区域 -->
     <footer class="footer">
@@ -683,6 +685,7 @@ const qualityImages = [
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
+  padding: 0 40px;
   flex: 1;
 }
 
@@ -692,7 +695,7 @@ const qualityImages = [
   gap: 20px;
   padding: 24px;
   background-color: #fff;
-  margin: 24px 24px 0 24px;
+  margin: 24px 0 0 0;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   min-height: 400px;
@@ -830,7 +833,7 @@ const qualityImages = [
 
 /* 内容模块区域样式 */
 .content-section {
-  padding: 0 24px 24px 24px;
+  padding: 24px 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -1048,7 +1051,7 @@ const qualityImages = [
 .footer {
   background-color: #b03128;
   color: white;
-  padding: 40px 24px;
+  padding: 40px 0;
   margin-top: auto;
 }
 
@@ -1058,7 +1061,7 @@ const qualityImages = [
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 40px;
 }
 
 .qr-section {
