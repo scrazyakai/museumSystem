@@ -92,7 +92,7 @@ public class ExhibitItemServiceImpl extends ServiceImpl<ExhibitItemMapper, Exhib
         Page<ExhibitItem> page = this.page(
                 new Page<>(current, size),
                 new QueryWrapper<ExhibitItem>()
-                        .eq("deleted", 0)
+                        .eq("status", ExhibitItemStatusEnum.DISPLAY.getValue())
                         .eq(mediaKind != null, "media_kind", mediaKind)
                         .and(wrapper -> wrapper
                                 .isNull("start_time")

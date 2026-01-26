@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElCarousel, ElCarouselItem, ElTabs, ElTabPane, ElScrollbar, ElButton, ElMessage, ElMessageBox, ElMenu, ElMenuItem, ElSubMenu } from 'element-plus'
+import { ElCarousel, ElCarouselItem, ElTabs, ElTabPane, ElScrollbar, ElButton, ElMessage, ElMessageBox, ElDropdown, ElDropdownMenu } from 'element-plus'
+import { HomeFilled, Collection, SwitchButton, UserFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import { useAuthStore } from '@/store/auth'
@@ -9,6 +10,9 @@ import { logout } from '@/api/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// 用户信息
+const userInfo = computed(() => authStore.userInfo)
 
 const currentDate = ref('')
 const weekday = ref('')
@@ -218,29 +222,40 @@ watch(activeFloor, () => {
   updateMapChart()
 })
 
-const scrollToSection = (item) => {
-  if (item.url) {
-    // 对于有 URL 的项目（馆藏精品），跳转到指定链接
-    window.location.href = item.url
-  } else {
-    // 对于有 id 的项目，滚动到对应模块
-    const element = document.getElementById(item.id)
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+// 跳转到首页顶部
+const goToHome = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// 跳转到展品列表
+const goToItems = () => {
+  router.push('/items')
+}
+
+// 滚动到指定模块
+const scrollToSection = (id) => {
+  const element = document.getElementById(id)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
-const menuItems = [
+// 右侧网格数据
+const gridItems = [
   { icon: '🕐', label: '开放时间', id: 'time' },
   { icon: '📅', label: '参观预约', id: 'booking' },
   { icon: '🗺️', label: '展厅分布', id: 'map' },
-  { icon: '📚', label: '馆藏精品', id: 'collection', url: '#collection' },
+  { icon: '📚', label: '馆藏精品', id: 'collection' },
   { icon: '🔔', label: '参观须知', id: 'rules' },
   { icon: '🎪', label: '便民服务', id: 'service' }
 ]
 
-const activeMenu = ref('')
+// 处理下拉菜单命令
+const handleCommand = (command: string) => {
+  if (command === 'logout') {
+    handleLogout()
+  }
+}
 
 // 退出登录
 const handleLogout = async () => {
@@ -267,20 +282,6 @@ const handleLogout = async () => {
   }
 }
 
-// 处理菜单选择
-const handleMenuSelect = (index: string) => {
-  activeMenu.value = index
-  const item = menuItems[parseInt(index)]
-  if (item) {
-    scrollToSection(item)
-  }
-}
-
-// 跳转到展品列表
-const goToItems = () => {
-  router.push('/items')
-}
-
 // 精品藏品图片列表
 const qualityImages = [
   { 
@@ -301,24 +302,31 @@ const qualityImages = [
     <header class="header">
       <div class="header-content">
         <div class="logo">博物馆</div>
-        <ElMenu
-          mode="horizontal"
-          :default-active="activeMenu"
-          @select="handleMenuSelect"
-          class="header-menu"
-        >
-          <ElMenuItem
-            v-for="(item, index) in menuItems"
-            :key="index"
-            :index="index.toString()"
-          >
-            <span class="menu-icon">{{ item.icon }}</span>
-            <span class="menu-label">{{ item.label }}</span>
-          </ElMenuItem>
-          <ElMenuItem index="logout" @click="handleLogout" class="logout-menu-item">
-            <span>退出登录</span>
-          </ElMenuItem>
-        </ElMenu>
+        <div class="header-nav">
+          <el-button type="text" @click="goToHome">
+            <el-icon><HomeFilled /></el-icon>
+            <span>首页</span>
+          </el-button>
+          <el-button type="text" @click="goToItems">
+            <el-icon><Collection /></el-icon>
+            <span>展品</span>
+          </el-button>
+        </div>
+        <el-dropdown @command="handleCommand" class="user-dropdown">
+          <div class="user-info">
+            <el-avatar v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" :size="32" />
+            <el-avatar v-else :icon="UserFilled" :size="32" />
+            <span class="username">{{ userInfo?.nickname || userInfo?.username }}</span>
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="logout">
+                <el-icon><SwitchButton /></el-icon>
+                退出登录
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </header>
 
@@ -347,10 +355,10 @@ const qualityImages = [
       <div class="right-grid">
         <div class="grid-row">
           <div
-              v-for="(item, index) in [menuItems[0], menuItems[1], menuItems[2]]"
+              v-for="(item, index) in gridItems.slice(0, 3)"
               :key="index"
               class="grid-item"
-              @click="scrollToSection(item)"
+              @click="scrollToSection(item.id)"
           >
             <div class="item-icon">{{ item.icon }}</div>
             <div class="item-label">{{ item.label }}</div>
@@ -358,10 +366,10 @@ const qualityImages = [
         </div>
         <div class="grid-row">
           <div
-              v-for="(item, index) in [menuItems[3], menuItems[4], menuItems[5]]"
+              v-for="(item, index) in gridItems.slice(3, 6)"
               :key="index + 3"
               class="grid-item"
-              @click="scrollToSection(item)"
+              @click="scrollToSection(item.id)"
           >
             <div class="item-icon">{{ item.icon }}</div>
             <div class="item-label">{{ item.label }}</div>
@@ -578,6 +586,7 @@ const qualityImages = [
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #f5f5f5;
 }
 
 /* Header 样式 */
@@ -594,7 +603,7 @@ const qualityImages = [
 
 .header-content {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0 40px;
   display: flex;
@@ -610,58 +619,83 @@ const qualityImages = [
   white-space: nowrap;
 }
 
-.header-menu {
-  background-color: transparent;
-  border: none;
-  flex: 1;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.header-menu :deep(.el-menu-item) {
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 40px;
+}
+
+.header-nav .el-button {
   color: rgba(255, 255, 255, 0.9);
-  border-bottom: 2px solid transparent;
-  height: 60px;
-  line-height: 60px;
-  padding: 0 20px;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
   transition: all 0.3s ease;
 }
 
-.header-menu :deep(.el-menu-item:hover) {
+.header-nav .el-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.header-menu :deep(.el-menu-item.is-active) {
-  background-color: rgba(255, 255, 255, 0.15);
-  color: white;
-  border-bottom: 2px solid white;
+.header-nav .el-button .el-icon {
+  margin-right: 4px;
 }
 
-.menu-icon {
-  margin-right: 8px;
-  font-size: 18px;
+.user-dropdown {
+  margin-left: auto;
 }
 
-.menu-label {
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.username {
   font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.logout-menu-item {
-  color: rgba(255, 100, 100, 0.9);
-  float: right;
+.el-dropdown :deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.logout-menu-item:hover {
-  background-color: rgba(255, 100, 100, 0.2) !important;
-  color: white !important;
+/* 主内容容器 */
+.main-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  flex: 1;
 }
 
 /* Hero 区域样式 */
 .hero-section {
   display: flex;
   gap: 20px;
-  padding: 20px;
-  background-color: #f4f4f4;
-  min-height: calc(100vh - 60px);
+  padding: 24px;
+  background-color: #fff;
+  margin: 24px 24px 0 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 400px;
 }
 
 /* 左侧卡片样式 */
@@ -796,17 +830,17 @@ const qualityImages = [
 
 /* 内容模块区域样式 */
 .content-section {
-  padding: 20px;
+  padding: 0 24px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .module {
   background-color: white;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .module-title {
@@ -1014,16 +1048,17 @@ const qualityImages = [
 .footer {
   background-color: #b03128;
   color: white;
-  padding: 40px 20px;
-  margin-top: 40px;
+  padding: 40px 24px;
+  margin-top: auto;
 }
 
 .footer-content {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 16px;
 }
 
 .qr-section {

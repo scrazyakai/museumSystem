@@ -10,8 +10,8 @@ export const useAuthStore = defineStore('auth', () => {
   // 登录类型
   const loginType = ref<'user' | 'admin' | null>(null)
   
-  // 是否已登录
-  const isAuthed = computed(() => !!userInfo.value && !!getToken())
+  // 是否已登录（只要有 token 就认为已登录）
+  const isAuthed = computed(() => !!getToken())
   
   // 是否是管理员
   const isAdmin = computed(() => userInfo.value?.role === 'ADMIN')

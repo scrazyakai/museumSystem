@@ -86,7 +86,7 @@ const loginRules: FormRules = {
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
+
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
@@ -95,16 +95,19 @@ const handleLogin = async () => {
           username: loginForm.username,
           password: loginForm.password
         })
-        
+
         // 验证是否为管理员
         if (res.role !== 'ADMIN') {
           ElMessage.error('该账号不是管理员账号')
           return
         }
-        
+
         // 保存用户信息
         authStore.setUser(res, 'admin')
         ElMessage.success('登录成功')
+
+        // 跳转到管理后台
+        await router.push('/admin')
       } catch (error) {
         console.error('登录失败:', error)
       } finally {

@@ -38,7 +38,7 @@ export interface PageResult<T> {
  * 获取展品列表（用户端）
  */
 export function getItems(params: ItemQueryParams): Promise<PageResult<ExhibitItem>> {
-  return http.get<PageResult<ExhibitItem>>('/api/items', { params }) as any
+  return http.get<PageResult<ExhibitItem>>('/api/items/list', { params }) as any
 }
 
 /**

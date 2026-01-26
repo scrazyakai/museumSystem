@@ -2,8 +2,10 @@ package com.design.museum.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.design.museum.common.BaseResponse;
+import com.design.museum.common.ErrorCode;
 import com.design.museum.common.ResultUtils;
 import com.design.museum.dto.ExhibitItemQueryRequest;
+import com.design.museum.exception.BusinessException;
 import com.design.museum.service.IExhibitItemService;
 import com.design.museum.vo.ExhibitItemVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,9 +34,12 @@ public class ExhibitController {
      * @param request 查询请求
      * @return 展品分页列表
      */
-    @GetMapping
+    @GetMapping("/list")
     @Operation(summary = "分页查询展品列表", description = "用户分页查询展品，只返回上架且在展示期内的展品")
     public BaseResponse<Page<ExhibitItemVO>> listExhibitItems(ExhibitItemQueryRequest request) {
+        if(request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"请求参数错误");
+        }
         Page<ExhibitItemVO> page = exhibitItemService.userListExhibitItems(request);
         return ResultUtils.success(page);
     }

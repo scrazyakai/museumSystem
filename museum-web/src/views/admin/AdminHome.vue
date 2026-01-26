@@ -24,12 +24,9 @@
                 {{ userInfo?.role }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="头像">
+            <el-descriptions-item label="头像" :span="2">
               <el-avatar v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" :size="60" />
               <el-avatar v-else icon="UserFilled" :size="60" />
-            </el-descriptions-item>
-            <el-descriptions-item label="Token">
-              <el-text size="small" truncated>{{ userInfo?.token }}</el-text>
             </el-descriptions-item>
           </el-descriptions>
         </el-card>

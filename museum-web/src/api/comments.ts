@@ -26,14 +26,14 @@ export interface CommentQueryParams {
  * 获取展品评论列表
  */
 export function getComments(itemId: number, params: CommentQueryParams): Promise<PageResult<Comment>> {
-  return http.get<PageResult<Comment>>(`/api/items/${itemId}/comments`, { params }) as any
+  return http.get<PageResult<Comment>>(`/api/items/${itemId}/comments/list`, { params }) as any
 }
 
 /**
  * 发表评论
  */
 export function addComment(itemId: number, data: AddCommentRequest): Promise<number> {
-  return http.post<number>(`/api/items/${itemId}/comments`, data) as any
+  return http.post<number>(`/api/items/${itemId}/comments/add`, data) as any
 }
 
 /**

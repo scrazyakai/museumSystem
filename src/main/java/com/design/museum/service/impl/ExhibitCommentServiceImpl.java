@@ -5,15 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.design.museum.dto.CommentAddRequest;
 import com.design.museum.entity.ExhibitComment;
+import com.design.museum.entity.SysUser;
+import com.design.museum.enums.CommentStatusEnum;
 import com.design.museum.mapper.ExhibitCommentMapper;
 import com.design.museum.service.IExhibitCommentService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.design.museum.vo.CommentVO;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +23,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper, ExhibitComment> implements IExhibitCommentService {
-
+    @Resource
+    private SysUserServiceImpl sysUserService;
     @Override
     public Long addComment(Long itemId, CommentAddRequest request, Long userId) {
         ExhibitComment comment = new ExhibitComment();
@@ -52,13 +55,13 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
     }
 
     @Override
-    public Page<com.design.museum.vo.CommentVO> listComments(Long itemId, long current, long size) {
+    public Page<CommentVO> listComments(Long itemId, long current, long size) {
         // 查询评论（只返回未删除的）
         Page<ExhibitComment> page = this.page(
                 new Page<>(current, size),
                 new QueryWrapper<ExhibitComment>()
                         .eq("item_id", itemId)
-                        .eq("deleted", 0)
+                        .eq("status", CommentStatusEnum.DISPLAY.getValue())
                         .orderByDesc("created_at")
         );
 
@@ -67,23 +70,24 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
                 .map(ExhibitComment::getUserId)
                 .distinct()
                 .collect(Collectors.toList());
+        Map<Long, String> userMap = sysUserService.listByIds(userIds).stream()
+                .collect(Collectors.toMap(
+                        SysUser::getId,
+                        u -> Optional.ofNullable(u.getUsername()).orElse(""),
+                        (a, b) -> a // 防止极端情况下重复key报错
+                ));
 
-        // TODO: 批量查询用户信息（需要SysUserService）
-        // 这里暂时设置username为空，实际使用时需要注入SysUserService来获取用户名
-        Map<Long, String> userMap = userIds.stream()
-                .collect(Collectors.toMap(id -> id, id -> "用户" + id));
 
         // 转换为VO
-        Page<com.design.museum.vo.CommentVO> voPage = new Page<>(current, size, page.getTotal());
-        List<com.design.museum.vo.CommentVO> voList = new ArrayList<>();
+        Page<CommentVO> voPage = new Page<>(current, size, page.getTotal());
+        List<CommentVO> voList = new ArrayList<>();
 
         for (ExhibitComment comment : page.getRecords()) {
-            com.design.museum.vo.CommentVO vo = new com.design.museum.vo.CommentVO();
+            CommentVO vo = new CommentVO();
             BeanUtil.copyProperties(comment, vo);
             vo.setUsername(userMap.get(comment.getUserId()));
             voList.add(vo);
         }
-
         voPage.setRecords(voList);
         return voPage;
     }

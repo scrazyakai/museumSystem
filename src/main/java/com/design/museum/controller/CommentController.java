@@ -35,7 +35,7 @@ public class CommentController {
      * @param size   每页大小
      * @return 评论分页列表
      */
-    @GetMapping
+    @GetMapping("/list")
     @Operation(summary = "分页查询展品评论", description = "分页查询指定展品的评论列表")
     public BaseResponse<Page<CommentVO>> listComments(
             @Parameter(description = "展品ID") @PathVariable("itemId") Long itemId,
@@ -52,7 +52,7 @@ public class CommentController {
      * @param request 添加请求
      * @return 评论ID
      */
-    @PostMapping
+    @PostMapping("/add")
     @Operation(summary = "添加评论", description = "登录用户对展品发表评论")
     public BaseResponse<Long> addComment(
             @Parameter(description = "展品ID") @PathVariable("itemId") Long itemId,
