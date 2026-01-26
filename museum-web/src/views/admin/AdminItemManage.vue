@@ -212,11 +212,10 @@
         </el-form-item>
 
         <el-form-item label="展品描述">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入展品描述"
+          <Editor
+            v-model="formData.description!"
+            height="300px"
+            placeholder="请输入展品描述..."
           />
         </el-form-item>
 
@@ -274,6 +273,7 @@ import {
 } from '@/api/admin-items'
 import dayjs from 'dayjs'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import Editor from '@/components/Editor.vue'
 
 const authStore = useAuthStore()
 

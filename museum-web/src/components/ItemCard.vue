@@ -32,7 +32,7 @@
     <div class="item-info">
       <h3 class="item-title">{{ item.title }}</h3>
       <p v-if="item.description" class="item-description">
-        {{ item.description }}
+        {{ stripHtml(item.description) }}
       </p>
       <div class="item-meta">
         <el-tag :type="item.mediaKind === 'IMAGE' ? 'success' : 'warning'" size="small">
@@ -64,6 +64,13 @@ const emit = defineEmits<{
 
 const handleClick = () => {
   emit('click', props.item)
+}
+
+// 去除HTML标签，提取纯文本
+const stripHtml = (html: string) => {
+  const div = document.createElement('div')
+  div.innerHTML = html
+  return div.textContent || div.innerText || ''
 }
 
 const formatTime = (time: string) => {

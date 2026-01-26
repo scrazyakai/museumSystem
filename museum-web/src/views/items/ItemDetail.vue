@@ -79,7 +79,7 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item v-if="item.description" label="展品描述">
-            {{ item.description }}
+            <div class="rich-text-content" v-html="item.description"></div>
           </el-descriptions-item>
           <el-descriptions-item label="展示时间">
             {{ displayTime }}
@@ -354,6 +354,19 @@ onMounted(() => {
 
 .detail-descriptions {
   margin-top: 16px;
+}
+
+.rich-text-content {
+  line-height: 1.6;
+}
+
+.rich-text-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+}
+
+.rich-text-content :deep(p) {
+  margin: 8px 0;
 }
 
 .comment-card {
