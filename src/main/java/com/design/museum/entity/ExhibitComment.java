@@ -1,5 +1,6 @@
 package com.design.museum.entity;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -44,6 +45,12 @@ public class ExhibitComment implements Serializable {
      * 1展示 0隐藏(管理员可审核)
      */
     private Integer status;
+
+    /**
+     * 逻辑删除：0未删除，1已删除
+     */
+    @TableLogic(value = "0", delval = "1")
+    private Integer deleted;
 
     private LocalDateTime createdAt;
 

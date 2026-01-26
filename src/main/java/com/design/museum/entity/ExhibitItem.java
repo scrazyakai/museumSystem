@@ -1,5 +1,6 @@
 package com.design.museum.entity;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -76,6 +77,9 @@ public class ExhibitItem implements Serializable {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @TableLogic
+    private Integer deleted;
 
 
 }

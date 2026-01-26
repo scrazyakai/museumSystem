@@ -39,6 +39,11 @@ public class CommentVO implements Serializable {
     private String content;
 
     /**
+     * 状态：0隐藏，1展示
+     */
+    private Integer status;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createdAt;

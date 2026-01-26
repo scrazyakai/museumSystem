@@ -13,7 +13,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOriginPatterns("http://localhost:3000", "http://localhost:8081") // 允许的前端地址
+                        .allowedOriginPatterns("http://localhost:3000", "http://localhost:3001") // 允许的前端地址
                         .allowedMethods("*")   // GET, POST, PUT, DELETE 等
                         .allowedHeaders("*")   // 允许任何头部
                         .allowCredentials(false) // 允许携带 Cookie
