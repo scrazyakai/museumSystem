@@ -9,6 +9,7 @@ export interface Comment {
   username: string
   content: string
   createdAt: string
+  avatarURL?: string
 }
 
 // 发表评论请求参数

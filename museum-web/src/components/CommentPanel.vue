@@ -1,8 +1,8 @@
 <template>
   <div class="comment-panel">
     <UComment
+      :key="configKey"
       :config="config"
-      relative-time
       @submit="handleSubmit"
       @like="handleLike"
       @show-info="handleShowInfo"
@@ -69,6 +69,38 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+// 强制刷新 config 的 key
+const configKey = ref(0)
+
+// 格式化时间显示
+const formatTime = (dateTime: string): string => {
+  const now = new Date()
+  const commentTime = new Date(dateTime)
+  const diffMs = now.getTime() - commentTime.getTime()
+  const diffHours = diffMs / (1000 * 60 * 60)
+  const diffDays = diffHours / 24
+
+  // 超过三天：显示 MM-DD
+  if (diffDays > 3) {
+    const month = String(commentTime.getMonth() + 1).padStart(2, '0')
+    const day = String(commentTime.getDate()).padStart(2, '0')
+    return `${month}-${day}`
+  }
+
+  // 24小时以上，三天以内：显示 x天前
+  if (diffDays >= 1) {
+    return `${Math.floor(diffDays)}天前`
+  }
+
+  // 24小时以内：显示 x小时前
+  if (diffHours >= 1) {
+    return `${Math.floor(diffHours)}小时前`
+  }
+
+  // 小于1小时：显示刚刚
+  return '刚刚'
+}
+
 // 转换后端评论数据为 undraw-ui 格式
 const convertToCommentApi = (comment: Comment): CommentApi => {
   return {
@@ -76,10 +108,10 @@ const convertToCommentApi = (comment: Comment): CommentApi => {
     parentId: null, // 暂不支持回复
     uid: String(comment.userId),
     content: comment.content,
-    createTime: comment.createdAt,
+    createTime: formatTime(comment.createdAt),
     user: {
       username: comment.username,
-      avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+      avatar: comment.avatarURL || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
       homeLink: '#',
       level: undefined
     }
@@ -129,6 +161,9 @@ const loadComments = async () => {
     })
     comments.value = result.records
     total.value = result.total
+
+    // 强制刷新 UComment 组件
+    configKey.value++
   } catch (error) {
     console.error('获取评论列表失败:', error)
     ElMessage.error('获取评论列表失败')
