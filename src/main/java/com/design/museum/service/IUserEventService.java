@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * </p>
  *
  * @author 
- * @since 2026-01-19
+ * @since 2026-01-29
  */
 public interface IUserEventService extends IService<UserEvent> {
 

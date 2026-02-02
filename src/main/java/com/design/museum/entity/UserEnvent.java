@@ -2,7 +2,6 @@ package com.design.museum.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
-import java.time.LocalDate;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.time.LocalDateTime;
 import java.io.Serializable;
@@ -21,8 +20,8 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("visit_booking")
-public class VisitBooking implements Serializable {
+@TableName("user_envent")
+public class UserEnvent implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -30,31 +29,14 @@ public class VisitBooking implements Serializable {
     private Long id;
 
     /**
-     * 预约用户
+     * 用户
      */
     private Long userId;
 
     /**
-     * 参观日期
+     * 线上展品ID（exhibit_item.id）
      */
-    private LocalDate visitDate;
-
-    /**
-     * 电子票/核验码(二维码内容)
-     */
-    private String ticketCode;
-
-    /**
-     * 1已预约 2已取消 3已改签 4已核验 5已过期
-     */
-    private Integer status;
-
-    private String cancelReason;
-
-    /**
-     * 核验时间
-     */
-    private LocalDateTime verifyTime;
+    private Long itemId;
 
     /**
      * 0正常 1删除
@@ -62,8 +44,6 @@ public class VisitBooking implements Serializable {
     private Integer deleted;
 
     private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
 
 
 }

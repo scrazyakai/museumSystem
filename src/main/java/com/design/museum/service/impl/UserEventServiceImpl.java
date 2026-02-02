@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * </p>
  *
  * @author 
- * @since 2026-01-19
+ * @since 2026-01-29
  */
 @Service
 public class UserEventServiceImpl extends ServiceImpl<UserEventMapper, UserEvent> implements IUserEventService {

@@ -2,13 +2,18 @@ package com.design.museum.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.design.museum.common.BaseResponse;
+import com.design.museum.common.ErrorCode;
 import com.design.museum.common.ResultUtils;
 import com.design.museum.dto.LoginRequest;
 import com.design.museum.dto.LoginResponse;
 import com.design.museum.dto.RegisterRequest;
+import com.design.museum.entity.SysUser;
+import com.design.museum.exception.BusinessException;
 import com.design.museum.service.ISysUserService;
+import com.design.museum.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.BeanUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -84,4 +89,57 @@ public class SysUserController {
         response.setToken(StpUtil.getTokenValue());
         return ResultUtils.success(response);
     }
+    @GetMapping("/detail")
+    @Operation(summary = "获取当前用户信息", description = "获取用户详细信息")
+    public BaseResponse<UserVO> getUserDetail(){
+        Long userId = StpUtil.getLoginIdAsLong();
+        SysUser user = sysUserService.getById(userId);
+        if(user == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"用户信息不存在");
+        }
+        UserVO userVO = new UserVO();
+        //手机号脱敏
+        if(user != null && user.getPhone() != null) {
+            String phone = user.getPhone();
+            int start = 0;
+            int end = 3;
+            int firstBegin = phone.length() - 3;
+            String maskPhone = phone.substring(start, end)  +"*".repeat(firstBegin - end)
+                    +phone.substring(firstBegin);
+            user.setPhone(maskPhone);
+        }
+        //身份证号脱敏
+        if(user != null && user.getIdNo() != null) {
+            String idNo = user.getIdNo();
+            // 第一段保留的开始
+            int firstStart = 0;
+            // 第一段保留的结束
+            int firstEnd = 6;
+            // 第二段保留的起始位置
+            int secondStart = idNo.length() - 4;
+            String maskIdNo = idNo.substring(firstStart, firstEnd) + "*".repeat(secondStart - firstEnd)
+                    +idNo.substring(secondStart);
+            user.setIdNo(maskIdNo);
+        }
+        if (user != null && user.getRealName() != null) {
+
+            String realName = user.getRealName();
+            int len = realName.length();
+            String maskName;
+            switch(realName.length()){
+                case 2:
+                    maskName = realName.substring(0, 1) + "*";
+                    break;
+                default:
+                    maskName = realName.substring(0, 1)
+                            + "*".repeat(len - 2)
+                            + realName.substring(len - 1);
+                    break;
+            }
+            user.setRealName(maskName);
+        }
+        BeanUtils.copyProperties(user, userVO);
+        return ResultUtils.success(userVO);
+    }
+
 }

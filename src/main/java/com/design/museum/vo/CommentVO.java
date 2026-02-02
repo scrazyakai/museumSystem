@@ -47,4 +47,8 @@ public class CommentVO implements Serializable {
      * 创建时间
      */
     private LocalDateTime createdAt;
+    /**
+     *  头像URL
+     */
+    private String avatarURL;
 }

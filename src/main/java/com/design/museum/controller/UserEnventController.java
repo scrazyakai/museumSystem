@@ -14,7 +14,7 @@ import org.springframework.stereotype.Controller;
  * @since 2026-01-29
  */
 @Controller
-@RequestMapping("/user-event")
-public class UserEventController {
+@RequestMapping("/user-envent")
+public class UserEnventController {
 
 }

@@ -2,9 +2,8 @@ package com.design.museum.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
-import java.time.LocalDate;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,33 +15,46 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author 
- * @since 2026-01-19
+ * @since 2026-01-29
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("visit_timeslot")
-public class VisitTimeslot implements Serializable {
+@TableName("user_notice")
+public class UserNotice implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    private LocalDate visitDate;
-
-    private LocalTime startTime;
-
-    private LocalTime endTime;
-
-    private Integer capacity;
-
-    private Integer reservedCount;
+    /**
+     * 接收用户
+     */
+    private Long userId;
 
     /**
-     * 1可预约 0停用
+     * 1预约 2公告 3活动 4讲座 5系统
      */
-    private Integer status;
+    private Integer category;
+
+    private String title;
+
+    private String content;
+
+    /**
+     * 0未读 1已读
+     */
+    private Integer readFlag;
+
+    private LocalDateTime readAt;
+
+    /**
+     * 0正常 1删除
+     */
+    private Integer deleted;
+
+    private LocalDateTime createdAt;
 
 
 }

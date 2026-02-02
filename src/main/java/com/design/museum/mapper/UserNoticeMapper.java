@@ -1,6 +1,6 @@
 package com.design.museum.mapper;
 
-import com.design.museum.entity.VisitTimeslot;
+import com.design.museum.entity.UserNotice;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
@@ -9,8 +9,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * </p>
  *
  * @author 
- * @since 2026-01-19
+ * @since 2026-01-29
  */
-public interface VisitTimeslotMapper extends BaseMapper<VisitTimeslot> {
+public interface UserNoticeMapper extends BaseMapper<UserNotice> {
 
 }

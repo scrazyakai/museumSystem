@@ -15,7 +15,7 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author 
- * @since 2026-01-19
+ * @since 2026-01-29
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -28,27 +28,20 @@ public class UserEvent implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 用户
+     */
     private Long userId;
 
     /**
-     * FAVORITE/UNFAVORITE/FOOTPRINT/CHECKIN/MESSAGE/PAGE_VIEW/CLICK/NOTICE
+     * 线上展品ID（exhibit_item.id）
      */
-    private String eventType;
+    private Long itemId;
 
     /**
-     * EXHIBITION/ARTIFACT/ACTIVITY/LECTURE/... 与 content.type 对齐
+     * 0正常 1删除
      */
-    private String targetType;
-
-    /**
-     * 指向 content.id 或其他
-     */
-    private Long targetId;
-
-    /**
-     * 扩展数据：留言内容、打卡照片、停留时长等
-     */
-    private String dataJson;
+    private Integer deleted;
 
     private LocalDateTime createdAt;
 

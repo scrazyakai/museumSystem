@@ -51,8 +51,8 @@ public class SysUser implements Serializable {
     @TableField("real_name")
     private String realName;
 
-    @TableField("id_card")
-    private String idCard;
+    @TableField("id_No")
+    private String idNo;
 
     @TableField("allow_push")
     private Integer allowPush;

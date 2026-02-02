@@ -17,7 +17,17 @@ public enum ErrorCode {
     USER_PASSWORD_ERROR(1002, "用户名或密码错误"),
     USER_DISABLED(1003, "用户已被禁用"),
     USER_PASSWORD_NOT_MATCH(1004, "两次密码不一致"),
-    USER_ALREADY_EXIST(1005, "用户名已存在");
+    USER_ALREADY_EXIST(1005, "用户名已存在"),
+
+    // 预约相关错误码
+    USER_NOT_REALNAME(2001, "请先绑定实名信息"),
+    BOOKING_NOT_FOUND(2002, "预约记录不存在"),
+    BOOKING_STATUS_ERROR(2003, "预约状态不允许该操作"),
+    BOOKING_EXPIRED(2004, "预约已过期"),
+    BOOKING_DATE_INVALID(2005, "预约日期无效"),
+    BOOKING_ALREADY_EXISTS(2006, "该日期已有预约"),
+    BOOKING_RESCHEDULE_LIMIT(2007, "今日已改签一次，请明日再试"),
+    BOOKING_NOT_ALLOW_RESCHEDULE(2008, "该预约不允许改签");
 
     /**
      * 状态码

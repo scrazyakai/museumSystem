@@ -58,7 +58,6 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
         // 使用MyBatis-Plus的逻辑删除功能
         return this.removeById(commentId);
     }
-
     @Override
     public Page<CommentVO> listComments(Long itemId, long current, long size) {
         // 查询评论（只返回未删除的）
@@ -69,25 +68,6 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
                         .eq("status", CommentStatusEnum.DISPLAY.getValue())
                         .orderByDesc("created_at")
         );
-
-        // 获取所有用户ID
-        List<Long> userIds = page.getRecords().stream()
-                .map(ExhibitComment::getUserId)
-                .distinct()
-                .collect(Collectors.toList());
-
-        // 只有当userIds不为空时才查询用户信息
-        Map<Long, String> userMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            userMap = sysUserService.listByIds(userIds).stream()
-                    .collect(Collectors.toMap(
-                            SysUser::getId,
-                            u -> Optional.ofNullable(u.getUsername()).orElse(""),
-                            (a, b) -> a // 防止极端情况下重复key报错
-                    ));
-        }
-
-
         // 转换为VO
         Page<CommentVO> voPage = new Page<>(current, size, page.getTotal());
         List<CommentVO> voList = new ArrayList<>();
@@ -95,7 +75,9 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
         for (ExhibitComment comment : page.getRecords()) {
             CommentVO vo = new CommentVO();
             BeanUtil.copyProperties(comment, vo);
-            vo.setUsername(userMap.get(comment.getUserId()));
+            SysUser user = sysUserService.getById(comment.getUserId());
+            vo.setUsername(user.getUsername());
+            vo.setAvatarURL(user.getAvatarUrl());
             voList.add(vo);
         }
         voPage.setRecords(voList);
