@@ -5,11 +5,11 @@
       <div class="header-content">
         <div class="logo" @click="goToHome">博物馆</div>
         <div class="header-nav">
-          <el-button type="text" @click="goToHome">
+          <el-button link @click="goToHome">
             <el-icon><HomeFilled /></el-icon>
             <span>首页</span>
           </el-button>
-          <el-button type="text" @click="goToList">
+          <el-button link @click="goToList">
             <el-icon><Collection /></el-icon>
             <span>展品</span>
           </el-button>
@@ -22,6 +22,10 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item command="profile">
+                <el-icon><UserFilled /></el-icon>
+                个人中心
+              </el-dropdown-item>
               <el-dropdown-item command="logout">
                 <el-icon><SwitchButton /></el-icon>
                 退出登录
@@ -168,7 +172,9 @@ const goToList = () => {
 
 // 处理下拉菜单命令
 const handleCommand = (command: string) => {
-  if (command === 'logout') {
+  if (command === 'profile') {
+    router.push('/profile')
+  } else if (command === 'logout') {
     handleLogout()
   }
 }

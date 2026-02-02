@@ -146,8 +146,8 @@
 
         <el-form-item label="媒体类型" prop="mediaKind">
           <el-radio-group v-model="formData.mediaKind" :disabled="isEdit">
-            <el-radio label="IMAGE">图片</el-radio>
-            <el-radio label="VIDEO">视频</el-radio>
+            <el-radio value="IMAGE">图片</el-radio>
+            <el-radio value="VIDEO">视频</el-radio>
           </el-radio-group>
         </el-form-item>
 

@@ -232,6 +232,11 @@ const goToItems = () => {
   router.push('/items')
 }
 
+// 跳转到预约页面
+const goToBooking = () => {
+  router.push('/booking')
+}
+
 // 滚动到指定模块
 const scrollToSection = (id) => {
   const element = document.getElementById(id)
@@ -252,9 +257,16 @@ const gridItems = [
 
 // 处理下拉菜单命令
 const handleCommand = (command: string) => {
-  if (command === 'logout') {
+  if (command === 'profile') {
+    goToProfile()
+  } else if (command === 'logout') {
     handleLogout()
   }
+}
+
+// 跳转到个人中心
+const goToProfile = () => {
+  router.push('/profile')
 }
 
 // 退出登录
@@ -303,11 +315,11 @@ const qualityImages = [
       <div class="header-content">
         <div class="logo">博物馆</div>
         <div class="header-nav">
-          <el-button type="text" @click="goToHome">
+          <el-button link @click="goToHome">
             <el-icon><HomeFilled /></el-icon>
             <span>首页</span>
           </el-button>
-          <el-button type="text" @click="goToItems">
+          <el-button link @click="goToItems">
             <el-icon><Collection /></el-icon>
             <span>展品</span>
           </el-button>
@@ -320,6 +332,10 @@ const qualityImages = [
           </div>
           <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item command="profile">
+                <el-icon><UserFilled /></el-icon>
+                个人中心
+              </el-dropdown-item>
               <el-dropdown-item command="logout">
                 <el-icon><SwitchButton /></el-icon>
                 退出登录
@@ -419,7 +435,7 @@ const qualityImages = [
               <div class="info-title">温馨提示</div>
               <div class="info-content">如遇特殊情况，博物馆保留调整开放时间及预约规则的权利</div>
             </div>
-            <ElButton type="danger" size="large" class="booking-button">预约入口</ElButton>
+            <ElButton type="danger" size="large" class="booking-button" @click="goToBooking">预约入口</ElButton>
           </div>
         </div>
       </div>

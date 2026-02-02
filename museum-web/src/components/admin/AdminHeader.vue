@@ -2,7 +2,7 @@
   <div class="admin-header">
     <div class="header-left">
       <el-button
-        type="text"
+        link
         :icon="collapsed ? Expand : Fold"
         @click="handleToggle"
         class="toggle-btn"

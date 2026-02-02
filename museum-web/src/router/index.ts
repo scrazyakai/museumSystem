@@ -53,6 +53,22 @@ const router = createRouter({
       meta: { requiresAuth: true, authType: 'user' }
     },
 
+    // 预约管理（用户端）
+    {
+      path: '/booking',
+      name: 'BookingView',
+      component: () => import('@/views/booking/BookingView.vue'),
+      meta: { requiresAuth: true, authType: 'user' }
+    },
+
+    // 个人中心（用户端）
+    {
+      path: '/profile',
+      name: 'ProfileView',
+      component: () => import('@/views/user/ProfileView.vue'),
+      meta: { requiresAuth: true, authType: 'user' }
+    },
+
     // 管理员首页及其子路由
     {
       path: '/admin',
@@ -82,6 +98,14 @@ const router = createRouter({
       path: '/admin/comments',
       name: 'AdminCommentManage',
       component: () => import('@/views/admin/AdminCommentManage.vue'),
+      meta: { requiresAuth: true, authType: 'admin' }
+    },
+
+    // 预约管理（管理端）
+    {
+      path: '/admin/bookings',
+      name: 'AdminBookingManage',
+      component: () => import('@/views/admin/AdminBookingManage.vue'),
       meta: { requiresAuth: true, authType: 'admin' }
     },
 
