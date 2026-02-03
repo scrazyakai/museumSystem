@@ -5,10 +5,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.design.museum.common.BaseResponse;
 import com.design.museum.common.ResultUtils;
+import com.design.museum.dto.BookingBatchCreateRequest;
 import com.design.museum.dto.BookingCancelRequest;
 import com.design.museum.dto.BookingCreateRequest;
 import com.design.museum.dto.BookingRescheduleRequest;
 import com.design.museum.service.IVisitBookingService;
+import com.design.museum.vo.BookingBatchResultVO;
 import com.design.museum.vo.BookingVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +42,17 @@ public class BookingController {
         Long userId = StpUtil.getLoginIdAsLong();
         BookingVO bookingVO = visitBookingService.createBooking(request, userId);
         return ResultUtils.success(bookingVO);
+    }
+
+    /**
+     * 批量创建预约
+     */
+    @Operation(summary = "批量创建预约（团体预约）")
+    @SaCheckLogin
+    @PostMapping("/batch-create")
+    public BaseResponse<BookingBatchResultVO> createBatchBookings(@Validated @RequestBody BookingBatchCreateRequest request) {
+        BookingBatchResultVO result = visitBookingService.createBatchBookings(request);
+        return ResultUtils.success(result);
     }
 
     /**

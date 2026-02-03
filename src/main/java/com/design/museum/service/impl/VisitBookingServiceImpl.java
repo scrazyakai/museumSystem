@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.design.museum.aop.Notice;
 import com.design.museum.common.ErrorCode;
+import com.design.museum.dto.BookingBatchCreateRequest;
 import com.design.museum.dto.BookingCancelRequest;
 import com.design.museum.dto.BookingCreateRequest;
 import com.design.museum.dto.BookingRescheduleRequest;
@@ -17,6 +18,8 @@ import com.design.museum.exception.BusinessException;
 import com.design.museum.mapper.VisitBookingMapper;
 import com.design.museum.service.ISysUserService;
 import com.design.museum.service.IVisitBookingService;
+import com.design.museum.service.IVisitDayQuotaService;
+import com.design.museum.vo.BookingBatchResultVO;
 import com.design.museum.vo.BookingVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -26,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 预约服务实现类
@@ -36,6 +41,9 @@ public class VisitBookingServiceImpl extends ServiceImpl<VisitBookingMapper, Vis
 
     @Resource
     private ISysUserService sysUserService;
+
+    @Resource
+    private IVisitDayQuotaService visitDayQuotaService;
 
     @Override
     @Notice(title = "预约成功", message = "预约成功：#{#result.visitDate.toString()}，票号：#{#result.ticketCode}")
@@ -63,10 +71,13 @@ public class VisitBookingServiceImpl extends ServiceImpl<VisitBookingMapper, Vis
             throw new BusinessException(ErrorCode.BOOKING_ALREADY_EXISTS, "该日期已有预约，无法重复预约");
         }
 
-        // 4. 生成票号（使用 UUID 去掉横线）
+        // 4. 扣减配额（带行锁，防止超卖）
+        visitDayQuotaService.decreaseQuota(visitDate);
+
+        // 5. 生成票号（使用 UUID 去掉横线）
         String ticketCode = java.util.UUID.randomUUID().toString().replace("-", "");
 
-        // 5. 创建预约记录
+        // 6. 创建预约记录
         VisitBooking booking = new VisitBooking();
         booking.setUserId(userId);
         booking.setVisitDate(visitDate);
@@ -78,8 +89,99 @@ public class VisitBookingServiceImpl extends ServiceImpl<VisitBookingMapper, Vis
 
         this.baseMapper.insert(booking);
 
-        // 6. 返回结果
+        // 7. 返回结果
         return toVO(booking);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public BookingBatchResultVO createBatchBookings(BookingBatchCreateRequest request) {
+        LocalDate visitDate = request.getVisitDate();
+        List<Long> userIds = request.getUserIds();
+        LocalDate today = LocalDate.now();
+
+        BookingBatchResultVO result = new BookingBatchResultVO();
+        List<BookingVO> successList = new ArrayList<>();
+        List<Long> failedUserIds = new ArrayList<>();
+
+        // 1. 校验预约日期
+        if (visitDate.isBefore(today)) {
+            throw new BusinessException(ErrorCode.BOOKING_DATE_INVALID, "预约日期不能早于今天");
+        }
+
+        // 2. 检查配额是否足够（悲观锁）
+        // 先批量扣减配额，确保有足够的名额
+        for (int i = 0; i < userIds.size(); i++) {
+            visitDayQuotaService.decreaseQuota(visitDate);
+        }
+
+        // 3. 遍历用户ID列表，为每个用户创建预约
+        int successCount = 0;
+        int failCount = 0;
+
+        try {
+            for (Long userId : userIds) {
+                try {
+                    // 3.1 校验实名信息
+                    checkRealName(userId);
+
+                    // 3.2 检查该日期是否已有有效预约
+                    QueryWrapper<VisitBooking> existQuery = new QueryWrapper<>();
+                    existQuery.eq("user_id", userId)
+                            .eq("visit_date", visitDate)
+                            .eq("deleted", 0)
+                            .in("status", 1, 3, 4);
+                    Long count = this.baseMapper.selectCount(existQuery);
+                    if (count > 0) {
+                        failedUserIds.add(userId);
+                        failCount++;
+                        continue;
+                    }
+
+                    // 3.3 生成票号
+                    String ticketCode = java.util.UUID.randomUUID().toString().replace("-", "");
+
+                    // 3.4 创建预约记录
+                    VisitBooking booking = new VisitBooking();
+                    booking.setUserId(userId);
+                    booking.setVisitDate(visitDate);
+                    booking.setTicketCode(ticketCode);
+                    booking.setStatus(1); // 1已预约
+                    booking.setDeleted(0);
+                    booking.setCreatedAt(LocalDateTime.now());
+                    booking.setUpdatedAt(LocalDateTime.now());
+
+                    this.baseMapper.insert(booking);
+
+                    // 3.5 添加到成功列表
+                    successList.add(toVO(booking));
+                    successCount++;
+
+                } catch (Exception e) {
+                    // 记录失败的用户
+                    failedUserIds.add(userId);
+                    failCount++;
+                    log.warn("批量预约失败，用户ID: {}, 原因: {}", userId, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            // 如果整个批量预约过程中出现严重异常，回滚并抛出
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "批量预约失败: " + e.getMessage());
+        }
+
+        // 4. 设置返回结果
+        result.setSuccessCount(successCount);
+        result.setFailCount(failCount);
+        result.setSuccessList(successList);
+        result.setFailedUserIds(failedUserIds);
+
+        if (failCount > 0) {
+            result.setErrorMessage("部分用户预约失败，已预约成功的用户: " + successCount + ", 失败: " + failCount);
+        }
+
+        log.info("批量预约完成，成功: {}, 失败: {}", successCount, failCount);
+
+        return result;
     }
 
     @Override
@@ -142,7 +244,23 @@ public class VisitBookingServiceImpl extends ServiceImpl<VisitBookingMapper, Vis
             throw new BusinessException(ErrorCode.BOOKING_ALREADY_EXISTS, "该日期已有预约");
         }
 
-        // 9. 更新预约
+        // 9. 如果日期不同，需要处理配额变更
+        LocalDate oldVisitDate = booking.getVisitDate();
+        if (!oldVisitDate.equals(newVisitDate)) {
+            // 9.1 先扣减新日期的配额（防止新日期没名额）
+            visitDayQuotaService.decreaseQuota(newVisitDate);
+
+            // 9.2 再恢复旧日期的配额
+            try {
+                visitDayQuotaService.increaseQuota(oldVisitDate);
+            } catch (Exception e) {
+                // 如果恢复失败，需要回滚新日期的配额扣减
+                visitDayQuotaService.increaseQuota(newVisitDate);
+                throw e;
+            }
+        }
+
+        // 10. 更新预约
         booking.setVisitDate(newVisitDate);
         booking.setStatus(3); // 3已改签
         booking.setUpdatedAt(LocalDateTime.now());
@@ -185,6 +303,9 @@ public class VisitBookingServiceImpl extends ServiceImpl<VisitBookingMapper, Vis
         booking.setCancelReason(cancelReason);
         booking.setUpdatedAt(LocalDateTime.now());
         this.baseMapper.updateById(booking);
+
+        // 6. 恢复配额
+        visitDayQuotaService.increaseQuota(booking.getVisitDate());
 
         return toVO(booking);
     }

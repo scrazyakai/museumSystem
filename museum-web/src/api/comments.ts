@@ -11,7 +11,8 @@ export interface Comment {
   createdAt: string
   avatarURL?: string
   liked: number // 0: 未点赞, 1: 已点赞
-  likecount: number // 点赞总数
+  likecount?: number // 点赞总数（后端可能返回likeCount）
+  likeCount?: number // 点赞总数（驼峰命名）
 }
 
 // 发表评论请求参数

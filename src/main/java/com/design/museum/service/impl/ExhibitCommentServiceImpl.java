@@ -9,6 +9,7 @@ import com.design.museum.entity.ExhibitItem;
 import com.design.museum.entity.SysUser;
 import com.design.museum.enums.CommentStatusEnum;
 import com.design.museum.mapper.ExhibitCommentMapper;
+import com.design.museum.service.IExhibitCommentLikeService;
 import com.design.museum.service.IExhibitCommentService;
 import com.design.museum.service.IExhibitItemService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -30,6 +31,8 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
     private SysUserServiceImpl sysUserService;
     @Resource
     private IExhibitItemService exhibitItemService;
+    @Resource
+    private IExhibitCommentLikeService exhibitCommentLikeService;
     @Override
     public Long addComment(Long itemId, CommentAddRequest request, Long userId) {
         ExhibitComment comment = new ExhibitComment();
@@ -59,7 +62,7 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
         return this.removeById(commentId);
     }
     @Override
-    public Page<CommentVO> listComments(Long itemId, long current, long size) {
+    public Page<CommentVO> listComments(Long itemId, long current, long size, Long userId) {
         // 查询评论（只返回未删除的）
         Page<ExhibitComment> page = this.page(
                 new Page<>(current, size),
@@ -78,6 +81,19 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
             SysUser user = sysUserService.getById(comment.getUserId());
             vo.setUsername(user.getUsername());
             vo.setAvatarURL(user.getAvatarUrl());
+
+            // 查询点赞数
+            Long likeCount = exhibitCommentLikeService.getLikeCount(comment.getId());
+            vo.setLikeCount(likeCount);
+
+            // 检查当前用户是否已点赞
+            if (userId != null) {
+                boolean hasLiked = exhibitCommentLikeService.hasLiked(comment.getId(), userId);
+                vo.setLiked(hasLiked ? 1 : 0);
+            } else {
+                vo.setLiked(0);
+            }
+
             voList.add(vo);
         }
         voPage.setRecords(voList);
@@ -85,7 +101,7 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
     }
 
     @Override
-    public Page<CommentVO> adminListComments(Long itemId, String itemName, long current, long size,Integer status) {
+    public Page<CommentVO> adminListComments(Long itemId, String itemName, long current, long size, Integer status, Long userId) {
         // 构建查询条件
         QueryWrapper<ExhibitComment> queryWrapper = new QueryWrapper<>();
         if(status != null) {
@@ -137,6 +153,19 @@ public class ExhibitCommentServiceImpl extends ServiceImpl<ExhibitCommentMapper,
             CommentVO vo = new CommentVO();
             BeanUtil.copyProperties(comment, vo);
             vo.setUsername(userMap.get(comment.getUserId()));
+
+            // 查询点赞数
+            Long likeCount = exhibitCommentLikeService.getLikeCount(comment.getId());
+            vo.setLikeCount(likeCount);
+
+            // 检查当前用户是否已点赞
+            if (userId != null) {
+                boolean hasLiked = exhibitCommentLikeService.hasLiked(comment.getId(), userId);
+                vo.setLiked(hasLiked ? 1 : 0);
+            } else {
+                vo.setLiked(0);
+            }
+
             voList.add(vo);
         }
         voPage.setRecords(voList);

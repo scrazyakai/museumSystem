@@ -51,4 +51,14 @@ public class CommentVO implements Serializable {
      *  头像URL
      */
     private String avatarURL;
+
+    /**
+     * 点赞数
+     */
+    private Long likeCount;
+
+    /**
+     * 当前用户是否已点赞：0未点赞，1已点赞
+     */
+    private Integer liked;
 }

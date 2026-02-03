@@ -498,33 +498,6 @@ const qualityImages = [
     </div>
     </div>
 
-    <!-- 底部二维码区域 -->
-    <footer class="footer">
-      <div class="footer-content">
-        <div class="qr-section">
-          <div class="qr-title">关注我们</div>
-          <div class="qr-container">
-            <div class="qr-item">
-              <div class="qr-placeholder">📱</div>
-              <div class="qr-label">微信公众号</div>
-            </div>
-            <div class="qr-item">
-              <div class="qr-placeholder">📷</div>
-              <div class="qr-label">官方抖音</div>
-            </div>
-            <div class="qr-item">
-              <div class="qr-placeholder">🌐</div>
-              <div class="qr-label">官方网站</div>
-            </div>
-          </div>
-        </div>
-        <div class="footer-info">
-          <p>© 2026 博物馆 版权所有</p>
-          <p>地址：XX市XX区XX路XX号</p>
-          <p>电话：010-XXXXXXXX</p>
-        </div>
-      </div>
-    </footer>
   </div>
 </template>
 
@@ -999,72 +972,5 @@ const qualityImages = [
   height: 600px;
   background-color: #f5f5f5;
   border-radius: 8px;
-}
-
-/* 底部二维码区域样式 */
-.footer {
-  background-color: #b03128;
-  color: white;
-  padding: 40px 0;
-  margin-top: auto;
-}
-
-.footer-content {
-  max-width: 1440px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 40px;
-}
-
-.qr-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.qr-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.qr-container {
-  display: flex;
-  gap: 40px;
-}
-
-.qr-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.qr-placeholder {
-  width: 120px;
-  height: 120px;
-  background-color: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-}
-
-.qr-label {
-  font-size: 14px;
-  color: #999;
-}
-
-.footer-info {
-  text-align: right;
-}
-
-.footer-info p {
-  margin: 8px 0;
-  color: #999;
-  font-size: 14px;
 }
 </style>

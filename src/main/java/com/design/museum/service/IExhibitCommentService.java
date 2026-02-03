@@ -37,9 +37,10 @@ public interface IExhibitCommentService extends IService<ExhibitComment> {
      * @param itemId     展品ID
      * @param current    当前页
      * @param size       每页大小
+     * @param userId     当前登录用户ID（可选，用于判断是否已点赞）
      * @return 分页结果
      */
-    Page<CommentVO> listComments(Long itemId, long current, long size);
+    Page<CommentVO> listComments(Long itemId, long current, long size, Long userId);
 
     /**
      * 管理员分页查询评论（支持按展品ID/名称搜索）
@@ -48,9 +49,11 @@ public interface IExhibitCommentService extends IService<ExhibitComment> {
      * @param itemName 展品名称（可选，模糊搜索）
      * @param current 当前页
      * @param size    每页大小
+     * @param status  评论状态（可选）
+     * @param userId  当前登录用户ID（可选，用于判断是否已点赞）
      * @return 分页结果
      */
-    Page<CommentVO> adminListComments(Long itemId, String itemName, long current, long size,Integer status);
+    Page<CommentVO> adminListComments(Long itemId, String itemName, long current, long size, Integer status, Long userId);
 
     /**
      * 管理员删除评论（逻辑删除）

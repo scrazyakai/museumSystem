@@ -1,5 +1,6 @@
 package com.design.museum.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.design.museum.annotation.AdminAuth;
 import com.design.museum.common.BaseResponse;
@@ -45,7 +46,9 @@ public class AdminCommentController {
             @Parameter(description = "每页大小") @RequestParam(value = "size", defaultValue = "10") long size,
             @Parameter(description = "评论状态") @RequestParam(value = "status", required = false) Integer status
     ) {
-        Page<CommentVO> page = exhibitCommentService.adminListComments(itemId, itemName, current, size,status);
+        // 获取当前登录用户ID
+        Long userId = StpUtil.getLoginIdAsLong();
+        Page<CommentVO> page = exhibitCommentService.adminListComments(itemId, itemName, current, size, status, userId);
         return ResultUtils.success(page);
     }
 

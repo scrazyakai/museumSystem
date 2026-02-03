@@ -27,7 +27,12 @@ public enum ErrorCode {
     BOOKING_DATE_INVALID(2005, "预约日期无效"),
     BOOKING_ALREADY_EXISTS(2006, "该日期已有预约"),
     BOOKING_RESCHEDULE_LIMIT(2007, "今日已改签一次，请明日再试"),
-    BOOKING_NOT_ALLOW_RESCHEDULE(2008, "该预约不允许改签");
+    BOOKING_NOT_ALLOW_RESCHEDULE(2008, "该预约不允许改签"),
+
+    // 配额相关错误码
+    QUOTA_NOT_EXIST(3001, "该日期配额不存在"),
+    QUOTA_FULL(3002, "该日期预约已满"),
+    QUOTA_UPDATE_FAILED(3003, "配额更新失败");
 
     /**
      * 状态码

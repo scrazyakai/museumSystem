@@ -41,7 +41,9 @@ public class CommentController {
             @Parameter(description = "展品ID") @PathVariable("itemId") Long itemId,
             @Parameter(description = "当前页") @RequestParam(value = "current", defaultValue = "1") long current,
             @Parameter(description = "每页大小") @RequestParam(value = "size", defaultValue = "10") long size) {
-        Page<CommentVO> page = exhibitCommentService.listComments(itemId, current, size);
+        // 获取当前登录用户ID（未登录则为null）
+        Long userId = StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null;
+        Page<CommentVO> page = exhibitCommentService.listComments(itemId, current, size, userId);
         return ResultUtils.success(page);
     }
 
@@ -90,4 +92,5 @@ public class CommentController {
         boolean result = exhibitCommentService.deleteComment(commentId, userId);
         return ResultUtils.success("删除成功", result);
     }
+
 }

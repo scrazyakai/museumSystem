@@ -1,35 +1,92 @@
 <template>
   <div class="comment-panel">
-    <UComment
-      :key="configKey"
-      :config="config"
-      @submit="handleSubmit"
-      @like="handleLike"
-      @show-info="handleShowInfo"
-      @before-data="handleBeforeData"
-    >
-      <!-- 未登录提示 -->
-      <template #operate>
-        <div v-if="!authStore.isAuthed" class="login-tip">
-          <el-icon><InfoFilled /></el-icon>
-          <span>登录后才能发表评论</span>
-          <el-button type="primary" text @click="handleLogin">去登录</el-button>
-        </div>
-      </template>
-
-      <!-- 自定义工具栏 - 删除按钮 -->
-      <template #tools="{ comment }">
+    <!-- 评论输入框 -->
+    <div v-if="authStore.isAuthed" class="comment-input-section">
+      <el-input
+        v-model="commentText"
+        type="textarea"
+        :rows="3"
+        placeholder="发表你的评论..."
+        maxlength="500"
+        show-word-limit
+        class="comment-input"
+      />
+      <div class="input-actions">
         <el-button
-          v-if="canDelete(comment)"
-          type="danger"
-          text
-          size="small"
-          @click="handleDelete(comment)"
+          type="primary"
+          @click="handleSubmit"
+          :disabled="!commentText.trim() || submitting"
+          :loading="submitting"
         >
-          删除
+          发表评论
         </el-button>
-      </template>
-    </UComment>
+      </div>
+    </div>
+
+    <!-- 未登录提示 -->
+    <div v-else class="login-tip">
+      <el-icon><InfoFilled /></el-icon>
+      <span>登录后才能发表评论</span>
+      <el-button type="primary" text @click="handleLogin">去登录</el-button>
+    </div>
+
+    <!-- 评论列表 -->
+    <div v-if="comments.length > 0" class="comment-list">
+      <div
+        v-for="comment in comments"
+        :key="comment.id"
+        class="comment-item"
+      >
+        <!-- 用户头像和信息 -->
+        <div class="comment-avatar">
+          <el-avatar
+            :src="comment.avatarURL"
+            :size="40"
+          >
+            {{ comment.username.charAt(0) }}
+          </el-avatar>
+        </div>
+
+        <!-- 评论内容区 -->
+        <div class="comment-content-wrapper">
+          <!-- 用户名 -->
+          <div class="comment-username">{{ comment.username }}</div>
+
+          <!-- 评论内容 -->
+          <div class="comment-text">{{ comment.content }}</div>
+
+          <!-- 点赞按钮（右上角） -->
+          <div class="comment-like-button" @click="handleLike(comment.id)">
+            <img
+              :src="comment.liked === 1 ? '/icons/like-liked.png' : '/icons/like-unliked.png'"
+              :alt="comment.liked === 1 ? '已点赞' : '未点赞'"
+              class="like-icon"
+            />
+            <span :class="{ 'liked': comment.liked === 1 }" class="like-count">
+              {{ comment.likeCount ?? comment.likecount ?? 0 }}
+            </span>
+          </div>
+
+          <!-- 发布时间（右下角） -->
+          <div class="comment-time">{{ formatTime(comment.createdAt) }}</div>
+
+          <!-- 删除按钮 -->
+          <el-button
+            v-if="authStore.userInfo?.id === comment.userId"
+            type="danger"
+            text
+            size="small"
+            @click="handleDelete(comment)"
+            class="delete-button"
+          >
+            删除
+          </el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <el-empty v-else description="暂无评论，快来抢沙发吧！" />
 
     <!-- 分页 -->
     <el-pagination
@@ -47,22 +104,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/auth'
 import { getComments, addComment, deleteComment, likeComment, unlikeComment, type Comment } from '@/api/comments'
 import dayjs from 'dayjs'
-import { UComment } from 'undraw-ui'
-import type { ConfigApi, CommentApi, SubmitParamApi } from 'undraw-ui'
 
 const props = defineProps<{
   itemId: number
-}>()
-
-const emit = defineEmits<{
-  (e: 'comment-deleted'): void
 }>()
 
 const router = useRouter()
@@ -72,9 +123,8 @@ const comments = ref<Comment[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
-
-// 强制刷新 config 的 key
-const configKey = ref(0)
+const commentText = ref('')
+const submitting = ref(false)
 
 // 格式化时间显示
 const formatTime = (dateTime: string): string => {
@@ -105,63 +155,6 @@ const formatTime = (dateTime: string): string => {
   return '刚刚'
 }
 
-// 转换后端评论数据为 undraw-ui 格式
-const convertToCommentApi = (comment: Comment): CommentApi => {
-  return {
-    id: String(comment.id),
-    parentId: null, // 暂不支持回复
-    uid: String(comment.userId),
-    content: comment.content,
-    createTime: formatTime(comment.createdAt),
-    like: comment.likecount || 0, // 点赞数
-    user: {
-      username: comment.username,
-      avatar: comment.avatarURL || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-      homeLink: '#',
-      level: undefined
-    }
-  }
-}
-
-// 配置对象
-const config = computed<ConfigApi>(() => {
-  const user = authStore.userInfo
-
-  // 获取当前用户已点赞的评论ID列表
-  const likedIds = comments.value
-    .filter(comment => comment.liked === 1)
-    .map(comment => String(comment.id))
-
-  // ConfigApi.user 是必需字段，即使未登录也需要提供（但通过 show.form 控制表单显示）
-  const configUser: any = user ? {
-    id: String(user.id),
-    username: user.nickname || user.username,
-    avatar: user.avatarUrl || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-    homeLink: '#',
-    level: null,
-    likeIds: likedIds // 当前用户已点赞的评论ID列表
-  } : {
-    id: '',
-    username: '',
-    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
-  }
-
-  return {
-    user: configUser,
-    comments: comments.value.map(convertToCommentApi),
-    show: {
-      // 未登录时隐藏评论表单，通过 operate 插槽显示登录提示
-      form: authStore.isAuthed,
-      content: true,
-      level: false,
-      likes: true, // 显示点赞功能
-      address: false,
-      homeLink: false,
-      reply: false // 暂不支持回复功能
-    }
-  }
-})
-
 // 获取评论列表
 const loadComments = async () => {
   try {
@@ -169,11 +162,14 @@ const loadComments = async () => {
       current: currentPage.value,
       size: pageSize.value
     })
+
+    // 打印第一条评论，检查字段名
+    if (result.records.length > 0) {
+      console.log('评论数据示例:', result.records[0])
+    }
+
     comments.value = result.records
     total.value = result.total
-
-    // 强制刷新 UComment 组件
-    configKey.value++
   } catch (error) {
     console.error('获取评论列表失败:', error)
     ElMessage.error('获取评论列表失败')
@@ -186,68 +182,79 @@ const handlePageChange = () => {
 }
 
 // 提交评论
-const handleSubmit = (submitParam: SubmitParamApi) => {
+const handleSubmit = async () => {
   if (!authStore.isAuthed) {
     ElMessage.warning('请先登录')
     return
   }
 
-  const { content, finish } = submitParam
+  const content = commentText.value.trim()
+  if (!content) {
+    ElMessage.warning('请输入评论内容')
+    return
+  }
 
-  addComment(props.itemId, { content: content.trim() })
-    .then((id) => {
-      ElMessage.success('评论成功')
-      // 创建新评论并添加到列表
-      const newComment: Comment = {
-        id,
-        itemId: props.itemId,
-        userId: authStore.userInfo!.id,
-        username: authStore.userInfo!.nickname || authStore.userInfo!.username,
-        content: content.trim(),
-        createdAt: new Date().toISOString()
-      }
-      comments.value.unshift(newComment)
-      total.value++
-      // 完成提交
-      finish(convertToCommentApi(newComment))
-    })
-    .catch((error) => {
-      console.error('发表评论失败:', error)
-      ElMessage.error('发表评论失败')
-    })
+  submitting.value = true
+  try {
+    const id = await addComment(props.itemId, { content })
+
+    // 创建新评论并添加到列表
+    const newComment: Comment = {
+      id,
+      itemId: props.itemId,
+      userId: authStore.userInfo!.id,
+      username: authStore.userInfo!.nickname || authStore.userInfo!.username,
+      content,
+      createdAt: new Date().toISOString(),
+      avatarURL: authStore.userInfo!.avatarUrl,
+      liked: 0,
+      likecount: 0
+    }
+
+    comments.value.unshift(newComment)
+    total.value++
+    commentText.value = ''
+    ElMessage.success('评论成功')
+  } catch (error) {
+    console.error('发表评论失败:', error)
+    ElMessage.error('发表评论失败')
+  } finally {
+    submitting.value = false
+  }
 }
 
 // 点赞/取消点赞
-const handleLike = async (id: string, finish: () => void) => {
+const handleLike = async (commentId: number) => {
   if (!authStore.isAuthed) {
     ElMessage.warning('请先登录')
-    finish()
     return
   }
 
-  const commentId = Number(id)
   const comment = comments.value.find(c => c.id === commentId)
+  if (!comment) return
 
-  if (!comment) {
-    finish()
-    return
-  }
+  // 获取当前点赞数（支持两种字段名）
+  const currentLikeCount = comment.likeCount ?? comment.likecount ?? 0
 
   // 判断是点赞还是取消点赞（liked: 1 = 已点赞, 0 = 未点赞）
   const isLiked = comment.liked === 1
   const previousLiked = comment.liked
-  const previousLikeCount = comment.likecount
+  const previousLikeCount = currentLikeCount
 
   try {
     // 乐观更新 UI
     if (isLiked) {
       // 取消点赞
       comment.liked = 0
-      comment.likecount = Math.max(0, comment.likecount - 1)
+      const newCount = Math.max(0, currentLikeCount - 1)
+      comment.likeCount = newCount
+      comment.likecount = newCount
     } else {
       // 点赞
       comment.liked = 1
-      comment.likecount++
+      const newCount = currentLikeCount + 1
+      comment.likeCount = newCount
+      comment.likecount = newCount
     }
 
     // 调用 API（返回boolean）
@@ -256,59 +263,20 @@ const handleLike = async (id: string, finish: () => void) => {
       : await likeComment(commentId)
 
     if (!success) {
-      // 如果API返回失败，回滚状态
       throw new Error('操作失败')
     }
-
-    // 强制刷新 config 以更新 likeIds
-    configKey.value++
   } catch (error) {
     // 发生错误，回滚到之前的状态
     console.error('点赞操作失败:', error)
     comment.liked = previousLiked
+    comment.likeCount = previousLikeCount
     comment.likecount = previousLikeCount
     ElMessage.error('操作失败，请稍后重试')
-  } finally {
-    finish()
   }
-}
-
-// 显示用户信息
-const handleShowInfo = (id: string, show: Function) => {
-  // 这里可以调用后端 API 获取用户详细信息
-  // 暂时使用默认显示
-  show({
-    homeLink: '#',
-    level: 1,
-    likeIds: []
-  })
-}
-
-// 加载前数据处理（过滤掉需要删除的评论）
-const handleBeforeData = (comment: CommentApi) => {
-  // 如果当前用户是评论作者，返回 true 表示显示该评论
-  // 如果不是，检查是否应该显示（管理员可以看到所有评论）
-  const originalComment = comments.value.find(c => String(c.id) === comment.id)
-  if (!originalComment) return true
-
-  // 只有评论作者和管理员可以看到删除按钮
-  const canDeleteItem = authStore.userInfo?.id === originalComment.userId
-
-  // 如果可以删除，添加一个自定义属性
-  if (canDeleteItem) {
-    ;(comment as any).canDelete = true
-  }
-
-  return true
-}
-
-// 判断是否可以删除评论
-const canDelete = (comment: CommentApi) => {
-  return authStore.userInfo?.id === Number(comment.uid)
 }
 
 // 删除评论
-const handleDelete = async (comment: CommentApi) => {
+const handleDelete = async (comment: Comment) => {
   try {
     await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
       confirmButtonText: '确定',
@@ -316,7 +284,7 @@ const handleDelete = async (comment: CommentApi) => {
       type: 'warning'
     })
 
-    await deleteComment(Number(comment.id))
+    await deleteComment(comment.id)
     ElMessage.success('删除成功')
     // 从列表中移除该评论
     comments.value = comments.value.filter(c => c.id !== comment.id)
@@ -342,6 +310,26 @@ onMounted(() => {
 <style scoped>
 .comment-panel {
   padding: 20px;
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+/* 评论输入区 */
+.comment-input-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+}
+
+.comment-input {
+  margin-bottom: 12px;
+}
+
+.input-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .login-tip {
@@ -351,43 +339,114 @@ onMounted(() => {
   padding: 16px;
   background: #f0f9ff;
   border: 1px solid #b3d8ff;
-  border-radius: 4px;
+  border-radius: 8px;
   color: #409eff;
   margin-bottom: 24px;
 }
 
+/* 评论列表 */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+}
+
+.comment-content-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 80px;
+  padding-top: 8px;
+}
+
+.comment-username {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  padding-right: 80px;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding-right: 80px;
+  margin-bottom: 24px;
+}
+
+/* 点赞按钮 - 右上角 */
+.comment-like-button {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.comment-like-button:hover {
+  background: #f5f7fa;
+}
+
+.like-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.like-count {
+  font-size: 14px;
+  color: #909399;
+}
+
+.like-count.liked {
+  color: #B03128;
+}
+
+/* 时间 - 右下角 */
+.comment-time {
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+}
+
+/* 删除按钮 */
+.delete-button {
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+  padding: 4px 8px;
+}
+
+/* 分页 */
 .pagination {
   margin-top: 24px;
   display: flex;
   justify-content: center;
-}
-
-/* undraw-ui 评论组件样式调整 */
-:deep(.u-comment) {
-  padding: 0;
-}
-
-:deep(.u-comment .u-comment-box) {
-  border-radius: 8px;
-}
-
-/* 简化布局 - 只为自定义图标提供样式 */
-:deep(.u-comment .u-comment-item) {
-  position: relative;
-}
-
-/* 自定义点赞图标 - 使用background-image方式 */
-:deep(.u-comment .comment-like .icon) {
-  width: 16px;
-  height: 16px;
-  background-image: url('/icons/like-unliked.png');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-}
-
-/* 已点赞状态的图标 */
-:deep(.u-comment .comment-like.liked .icon) {
-  background-image: url('/icons/like-liked.png') !important;
 }
 </style>

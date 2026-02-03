@@ -3,11 +3,9 @@ package com.design.museum.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.design.museum.dto.BookingCancelRequest;
-import com.design.museum.dto.BookingCreateRequest;
-import com.design.museum.dto.BookingRescheduleRequest;
-import com.design.museum.dto.BookingVerifyRequest;
+import com.design.museum.dto.*;
 import com.design.museum.entity.VisitBooking;
+import com.design.museum.vo.BookingBatchResultVO;
 import com.design.museum.vo.BookingVO;
 
 import java.time.LocalDate;
@@ -30,6 +28,14 @@ public interface IVisitBookingService extends IService<VisitBooking> {
      * @return 预约信息
      */
     BookingVO createBooking(BookingCreateRequest request, Long userId);
+
+    /**
+     * 批量创建预约（团体预约）
+     *
+     * @param request 批量创建预约请求
+     * @return 批量预约结果
+     */
+    BookingBatchResultVO createBatchBookings(BookingBatchCreateRequest request);
 
     /**
      * 改签预约
