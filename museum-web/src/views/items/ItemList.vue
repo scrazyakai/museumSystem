@@ -1,40 +1,7 @@
 <template>
   <div class="items-page">
     <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo" @click="goToHome">博物馆</div>
-        <div class="header-nav">
-          <el-button link @click="goToHome">
-            <el-icon><HomeFilled /></el-icon>
-            <span>首页</span>
-          </el-button>
-          <el-button link class="active">
-            <el-icon><Collection /></el-icon>
-            <span>展品</span>
-          </el-button>
-        </div>
-        <el-dropdown @command="handleCommand" class="user-dropdown">
-          <div class="user-info">
-            <el-avatar v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" :size="32" />
-            <el-avatar v-else :icon="UserFilled" :size="32" />
-            <span class="username">{{ userInfo?.nickname || userInfo?.username }}</span>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">
-                <el-icon><UserFilled /></el-icon>
-                个人中心
-              </el-dropdown-item>
-              <el-dropdown-item command="logout">
-                <el-icon><SwitchButton /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </header>
+    <AppHeader />
 
     <!-- 主内容 -->
     <div class="item-list">
@@ -78,19 +45,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, ElButton, ElDropdown, ElDropdownMenu } from 'element-plus'
-import { HomeFilled, Collection, SwitchButton, UserFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import MasonryGrid from '@/components/MasonryGrid.vue'
 import ItemCard from '@/components/ItemCard.vue'
 import { getItems, type ExhibitItem, type ItemQueryParams, type MediaKind } from '@/api/items'
-import { useAuthStore } from '@/store/auth'
-import { logout } from '@/api/auth'
+import AppHeader from '@/components/common/AppHeader.vue'
 
 const router = useRouter()
-const authStore = useAuthStore()
-
-// 用户信息
-const userInfo = computed(() => authStore.userInfo)
 
 const items = ref<ExhibitItem[]>([])
 const loading = ref(false)
@@ -158,43 +119,6 @@ const handleItemClick = (item: ExhibitItem) => {
   router.push(`/items/${item.id}`)
 }
 
-// 返回首页
-const goToHome = () => {
-  router.push('/home')
-}
-
-// 处理下拉菜单命令
-const handleCommand = (command: string) => {
-  if (command === 'profile') {
-    router.push('/profile')
-  } else if (command === 'logout') {
-    handleLogout()
-  }
-}
-
-// 退出登录
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-
-    try {
-      await logout()
-    } catch (error) {
-      console.error('退出登录接口调用失败:', error)
-    }
-
-    authStore.clearUser()
-    ElMessage.success('已退出登录')
-    router.push('/login/user')
-  } catch {
-    // 用户取消
-  }
-}
-
 onMounted(() => {
   loadItems()
 })
@@ -206,95 +130,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   background-color: #f5f5f5;
-}
-
-/* Header 样式 */
-.header {
-  background-color: #b03128;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.header-content {
-  width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-  margin: 0;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.header-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 40px;
-}
-
-.header-nav .el-button {
-  color: rgba(255, 255, 255, 0.9);
-  border: none;
-  padding: 8px 16px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.header-nav .el-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.header-nav .el-button.active {
-  background-color: rgba(255, 255, 255, 0.15);
-  color: white;
-}
-
-.header-nav .el-button .el-icon {
-  margin-right: 4px;
-}
-
-.user-dropdown {
-  margin-left: auto;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 4px;
-  transition: background 0.3s;
-}
-
-.user-info:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.username {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.el-dropdown :deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* 主内容 */

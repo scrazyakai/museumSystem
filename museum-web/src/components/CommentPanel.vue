@@ -52,13 +52,17 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/auth'
-import { getComments, addComment, deleteComment, type Comment } from '@/api/comments'
+import { getComments, addComment, deleteComment, likeComment, unlikeComment, type Comment } from '@/api/comments'
 import dayjs from 'dayjs'
 import { UComment } from 'undraw-ui'
 import type { ConfigApi, CommentApi, SubmitParamApi } from 'undraw-ui'
 
 const props = defineProps<{
   itemId: number
+}>()
+
+const emit = defineEmits<{
+  (e: 'comment-deleted'): void
 }>()
 
 const router = useRouter()
@@ -109,6 +113,7 @@ const convertToCommentApi = (comment: Comment): CommentApi => {
     uid: String(comment.userId),
     content: comment.content,
     createTime: formatTime(comment.createdAt),
+    like: comment.likecount || 0, // 点赞数
     user: {
       username: comment.username,
       avatar: comment.avatarURL || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
@@ -122,6 +127,11 @@ const convertToCommentApi = (comment: Comment): CommentApi => {
 const config = computed<ConfigApi>(() => {
   const user = authStore.userInfo
 
+  // 获取当前用户已点赞的评论ID列表
+  const likedIds = comments.value
+    .filter(comment => comment.liked === 1)
+    .map(comment => String(comment.id))
+
   // ConfigApi.user 是必需字段，即使未登录也需要提供（但通过 show.form 控制表单显示）
   const configUser: any = user ? {
     id: String(user.id),
@@ -129,7 +139,7 @@ const config = computed<ConfigApi>(() => {
     avatar: user.avatarUrl || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
     homeLink: '#',
     level: null,
-    likeIds: []
+    likeIds: likedIds // 当前用户已点赞的评论ID列表
   } : {
     id: '',
     username: '',
@@ -144,7 +154,7 @@ const config = computed<ConfigApi>(() => {
       form: authStore.isAuthed,
       content: true,
       level: false,
-      likes: false, // 后端暂不支持点赞
+      likes: true, // 显示点赞功能
       address: false,
       homeLink: false,
       reply: false // 暂不支持回复功能
@@ -207,10 +217,60 @@ const handleSubmit = (submitParam: SubmitParamApi) => {
     })
 }
 
-// 点赞（暂不支持）
-const handleLike = (id: string, finish: () => void) => {
-  ElMessage.info('点赞功能暂未开放')
-  finish()
+// 点赞/取消点赞
+const handleLike = async (id: string, finish: () => void) => {
+  if (!authStore.isAuthed) {
+    ElMessage.warning('请先登录')
+    finish()
+    return
+  }
+
+  const commentId = Number(id)
+  const comment = comments.value.find(c => c.id === commentId)
+
+  if (!comment) {
+    finish()
+    return
+  }
+
+  // 判断是点赞还是取消点赞（liked: 1 = 已点赞, 0 = 未点赞）
+  const isLiked = comment.liked === 1
+  const previousLiked = comment.liked
+  const previousLikeCount = comment.likecount
+
+  try {
+    // 乐观更新 UI
+    if (isLiked) {
+      // 取消点赞
+      comment.liked = 0
+      comment.likecount = Math.max(0, comment.likecount - 1)
+    } else {
+      // 点赞
+      comment.liked = 1
+      comment.likecount++
+    }
+
+    // 调用 API（返回boolean）
+    const success = isLiked
+      ? await unlikeComment(commentId)
+      : await likeComment(commentId)
+
+    if (!success) {
+      // 如果API返回失败，回滚状态
+      throw new Error('操作失败')
+    }
+
+    // 强制刷新 config 以更新 likeIds
+    configKey.value++
+  } catch (error) {
+    // 发生错误，回滚到之前的状态
+    console.error('点赞操作失败:', error)
+    comment.liked = previousLiked
+    comment.likecount = previousLikeCount
+    ElMessage.error('操作失败，请稍后重试')
+  } finally {
+    finish()
+  }
 }
 
 // 显示用户信息
@@ -311,12 +371,23 @@ onMounted(() => {
   border-radius: 8px;
 }
 
+/* 简化布局 - 只为自定义图标提供样式 */
 :deep(.u-comment .u-comment-item) {
-  border-bottom: 1px solid #f0f0f0;
-  padding: 16px 0;
+  position: relative;
 }
 
-:deep(.u-comment .u-comment-item:last-child) {
-  border-bottom: none;
+/* 自定义点赞图标 - 使用background-image方式 */
+:deep(.u-comment .comment-like .icon) {
+  width: 16px;
+  height: 16px;
+  background-image: url('/icons/like-unliked.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* 已点赞状态的图标 */
+:deep(.u-comment .comment-like.liked .icon) {
+  background-image: url('/icons/like-liked.png') !important;
 }
 </style>

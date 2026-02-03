@@ -12,7 +12,9 @@
       "Bash(curl:*)",
       "Bash(nul)",
       "Bash(dir node_modulesundraw-uidist)",
-      "Bash(dir node_modulesundraw-uiescomponents)"
+      "Bash(dir node_modulesundraw-uiescomponents)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

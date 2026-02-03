@@ -107,3 +107,25 @@ export function getMyBookings(params: BookingQueryParams): Promise<PageResult<Bo
 export function getBookingDetail(id: number): Promise<Booking> {
   return http.get<Booking>('/api/bookings/detail', { params: { id } }) as any
 }
+
+// 批量预约请求
+export interface BatchCreateRequest {
+  visitDate: string // 格式：yyyy-MM-DD
+  userIds: number[]
+}
+
+// 批量预约结果
+export interface BatchCreateResult {
+  successCount: number
+  failCount: number
+  successList: Booking[]
+  failedUserIds: number[]
+  errorMessage: string
+}
+
+/**
+ * 批量创建预约（团体预约）
+ */
+export function createBatchBookings(data: BatchCreateRequest): Promise<BatchCreateResult> {
+  return http.post<BatchCreateResult>('/api/bookings/batch-create', data) as any
+}

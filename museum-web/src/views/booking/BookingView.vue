@@ -16,20 +16,24 @@ import {
   ElDropdown,
   ElDropdownMenu
 } from 'element-plus'
-import { Calendar, ArrowLeft, Refresh, Delete,Tickets, UserFilled, SwitchButton } from '@element-plus/icons-vue'
+import { Calendar, Refresh, Delete, Tickets, UserFilled } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import {
   createBooking,
   getMyBookings,
   cancelBooking,
   rescheduleBooking,
+  createBatchBookings,
   type Booking,
+  type BatchCreateResult,
   BookingStatus,
   BookingStatusText,
   BookingStatusColor
 } from '@/api/booking'
 import { getUserProfile, type UserProfile } from '@/api/user'
+import { getQuotaInfo, type QuotaInfo } from '@/api/quota'
 import { useAuthStore } from '@/store/auth'
+import AppHeader from '@/components/common/AppHeader.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -41,6 +45,8 @@ const loading = ref(false)
 // 创建预约相关
 const showCreateDialog = ref(false)
 const selectedDate = ref('')
+const quotaInfo = ref<QuotaInfo | null>(null)
+const quotaLoading = ref(false)
 const dateOptions = {
   disabledDate(time: Date) {
     // 不能选择过去的日期
@@ -66,6 +72,23 @@ const rescheduleDate = ref('')
 const showCancelDialog = ref(false)
 const cancelBookingId = ref<number | null>(null)
 const cancelReason = ref('')
+
+// 团体预约相关
+const showBatchDialog = ref(false)
+const batchDate = ref('')
+const batchQuotaInfo = ref<QuotaInfo | null>(null)
+const selectedUsers = ref<number[]>([])
+const batchLoading = ref(false)
+const batchResult = ref<BatchCreateResult | null>(null)
+
+// 团体预约人员列表
+interface PersonInfo {
+  id?: number
+  realName: string
+  idNo: string
+  phone: string
+}
+const personList = ref<PersonInfo[]>([])
 
 onMounted(async () => {
   await loadUserProfile()
@@ -100,6 +123,24 @@ const loadBookingList = async () => {
   }
 }
 
+// 加载库存信息
+const loadQuotaInfo = async (date: string) => {
+  if (!date) {
+    quotaInfo.value = null
+    return
+  }
+  quotaLoading.value = true
+  try {
+    const data = await getQuotaInfo(date)
+    quotaInfo.value = data
+  } catch (error) {
+    console.error('加载库存信息失败:', error)
+    quotaInfo.value = null
+  } finally {
+    quotaLoading.value = false
+  }
+}
+
 // 分页改变
 const handlePageChange = (page: number) => {
   pagination.value.current = page
@@ -114,13 +155,28 @@ const openCreateDialog = () => {
     return
   }
   selectedDate.value = ''
+  quotaInfo.value = null
   showCreateDialog.value = true
+}
+
+// 监听日期选择变化，加载库存信息
+const handleDateChange = (date: string) => {
+  if (date) {
+    loadQuotaInfo(date)
+  } else {
+    quotaInfo.value = null
+  }
 }
 
 // 创建预约
 const handleCreateBooking = async () => {
   if (!selectedDate.value) {
     ElMessage.warning('请选择参观日期')
+    return
+  }
+
+  if (!quotaInfo.value || quotaInfo.value.remainingCount <= 0) {
+    ElMessage.warning('该日期已无剩余名额，请选择其他日期')
     return
   }
 
@@ -193,35 +249,97 @@ const handleCancel = async () => {
   }
 }
 
-// 返回首页
-const goBack = () => {
-  router.push('/home')
+// 打开团体预约对话框
+const openBatchDialog = () => {
+  if (!userInfo.value?.realName) {
+    ElMessage.warning('请先完成实名认证')
+    router.push('/profile')
+    return
+  }
+  batchDate.value = ''
+  batchQuotaInfo.value = null
+  personList.value = [{ realName: '', idNo: '', phone: '' }]
+  batchResult.value = null
+  showBatchDialog.value = true
 }
 
-// 处理下拉菜单命令
-const handleCommand = (command: string) => {
-  if (command === 'profile') {
-    router.push('/profile')
-  } else if (command === 'logout') {
-    handleLogout()
+// 添加预约人
+const addPerson = () => {
+  personList.value.push({ realName: '', idNo: '', phone: '' })
+}
+
+// 删除预约人
+const removePerson = (index: number) => {
+  if (personList.value.length > 1) {
+    personList.value.splice(index, 1)
+  } else {
+    ElMessage.warning('至少保留一个预约人')
   }
 }
 
-// 退出登录
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
+// 团体预约
+const handleBatchCreate = async () => {
+  if (!batchDate.value) {
+    ElMessage.warning('请选择参观日期')
+    return
+  }
 
-    // 清除本地状态
-    authStore.clearUser()
-    ElMessage.success('已退出登录')
-    router.push('/login/user')
-  } catch {
-    // 用户取消
+  if (!batchQuotaInfo.value || batchQuotaInfo.value.remainingCount <= 0) {
+    ElMessage.warning('该日期已无剩余名额')
+    return
+  }
+
+  // 验证表单
+  const validPersons = personList.value.filter(p => p.realName && p.idNo && p.phone)
+  if (validPersons.length === 0) {
+    ElMessage.warning('请至少填写一个完整的预约人信息')
+    return
+  }
+
+  if (validPersons.length > batchQuotaInfo.value.remainingCount) {
+    ElMessage.warning(`剩余名额不足，仅剩 ${batchQuotaInfo.value.remainingCount} 个`)
+    return
+  }
+
+  // 验证身份证号和手机号格式
+  for (const person of validPersons) {
+    const idReg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
+    const phoneReg = /^1[3-9]\d{9}$/
+
+    if (!idReg.test(person.idNo)) {
+      ElMessage.warning(`请检查身份证号格式：${person.realName}`)
+      return
+    }
+    if (!phoneReg.test(person.phone)) {
+      ElMessage.warning(`请检查手机号格式：${person.realName}`)
+      return
+    }
+  }
+
+  batchLoading.value = true
+  try {
+    // 这里需要先通过手机号或身份证号查找用户ID
+    // 暂时使用当前用户的ID（实际应该调用后端接口查找）
+    const userIds = validPersons.map(() => authStore.userInfo!.id)
+
+    const result = await createBatchBookings({
+      visitDate: batchDate.value,
+      userIds
+    })
+    batchResult.value = result
+
+    if (result.failCount === 0) {
+      ElMessage.success(`成功预约 ${result.successCount} 人`)
+      showBatchDialog.value = false
+      loadBookingList()
+    } else {
+      ElMessage.warning(`成功 ${result.successCount} 人，失败 ${result.failCount} 人`)
+    }
+  } catch (error) {
+    console.error('团体预约失败:', error)
+    ElMessage.error('团体预约失败，请确保所有用户已注册并完成实名认证')
+  } finally {
+    batchLoading.value = false
   }
 }
 </script>
@@ -229,41 +347,7 @@ const handleLogout = async () => {
 <template>
   <div class="booking-container">
     <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo-section">
-          <el-button link @click="goBack" class="back-button">
-            <el-icon><ArrowLeft /></el-icon>
-            <span>返回首页</span>
-          </el-button>
-        </div>
-        <div class="logo-section">
-          <el-icon :size="28" color="#b03128"><Tickets /></el-icon>
-          <span class="logo-text">参观预约</span>
-        </div>
-        <div class="header-actions">
-          <el-dropdown @command="handleCommand" class="user-dropdown">
-            <div class="user-dropdown-info">
-              <el-avatar v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" :size="32" />
-              <el-avatar v-else :icon="UserFilled" :size="32" />
-              <span class="username">{{ userInfo?.username }}</span>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile">
-                  <el-icon><UserFilled /></el-icon>
-                  个人中心
-                </el-dropdown-item>
-                <el-dropdown-item command="logout">
-                  <el-icon><SwitchButton /></el-icon>
-                  退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </div>
-    </header>
+    <AppHeader />
 
     <!-- 主内容区 -->
     <div class="main-content">
@@ -288,15 +372,25 @@ const handleLogout = async () => {
             </div>
           </div>
           <div class="action-section">
-            <el-button
-              type="danger"
-              size="large"
-              :icon="Calendar"
-              @click="openCreateDialog"
-            >
-              立即预约
-            </el-button>
-            <div class="tip-text">每日限额 5000 人，建议提前预约</div>
+            <div class="button-group">
+              <el-button
+                type="danger"
+                size="large"
+                :icon="Calendar"
+                @click="openCreateDialog"
+              >
+                立即预约
+              </el-button>
+              <el-button
+                type="primary"
+                size="large"
+                :icon="UserFilled"
+                @click="openBatchDialog"
+              >
+                团体预约
+              </el-button>
+            </div>
+            <div class="tip-text">每日限额 2000 人，建议提前预约</div>
           </div>
         </div>
       </el-card>
@@ -399,9 +493,33 @@ const handleLogout = async () => {
             format="YYYY-MM-DD"
             value-format="YYYY-MM-DD"
             :disabled-date="dateOptions.disabledDate"
+            @change="handleDateChange"
             style="width: 100%"
           />
         </el-form-item>
+        <div v-if="quotaLoading && selectedDate" class="quota-loading">
+          <el-icon class="is-loading"><Refresh /></el-icon>
+          <span>加载库存信息中...</span>
+        </div>
+        <div v-if="quotaInfo && selectedDate" class="quota-info">
+          <el-alert
+            :title="`剩余名额: ${quotaInfo.remainingCount} / 总名额: ${quotaInfo.capacity}`"
+            :type="quotaInfo.remainingCount > 1000 ? 'success' : quotaInfo.remainingCount > 0 ? 'warning' : 'error'"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div class="quota-details">
+                <div>已预约: {{ quotaInfo.reservedCount }} 人</div>
+                <div>剩余: {{ quotaInfo.remainingCount }} 人</div>
+                <el-progress
+                  :percentage="Math.round((quotaInfo.reservedCount / quotaInfo.capacity) * 100)"
+                  :status="quotaInfo.remainingCount > 1000 ? 'success' : quotaInfo.remainingCount > 0 ? 'warning' : 'exception'"
+                />
+              </div>
+            </template>
+          </el-alert>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
@@ -475,6 +593,135 @@ const handleLogout = async () => {
         <el-button type="danger" @click="handleCancel">确定取消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 团体预约对话框 -->
+    <el-dialog
+      v-model="showBatchDialog"
+      title="团体预约"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-position="top">
+        <el-form-item label="选择参观日期">
+          <el-date-picker
+            v-model="batchDate"
+            type="date"
+            placeholder="请选择参观日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            :disabled-date="dateOptions.disabledDate"
+            @change="handleDateChange"
+            style="width: 100%"
+          />
+        </el-form-item>
+
+        <div v-if="batchLoading && batchDate" class="quota-loading">
+          <el-icon class="is-loading"><Refresh /></el-icon>
+          <span>加载库存信息中...</span>
+        </div>
+
+        <div v-if="batchQuotaInfo && batchDate" class="quota-info">
+          <el-alert
+            :title="`剩余名额: ${batchQuotaInfo.remainingCount} / 总名额: ${batchQuotaInfo.capacity}`"
+            :type="batchQuotaInfo.remainingCount > 1000 ? 'success' : batchQuotaInfo.remainingCount > 0 ? 'warning' : 'error'"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div class="quota-details">
+                <div>已预约: {{ batchQuotaInfo.reservedCount }} 人</div>
+                <div>剩余: {{ batchQuotaInfo.remainingCount }} 人</div>
+              </div>
+            </template>
+          </el-alert>
+        </div>
+
+        <el-divider content-position="left">预约人员信息</el-divider>
+
+        <div v-for="(person, index) in personList" :key="index" class="person-form-item">
+          <div class="person-header">
+            <span class="person-title">预约人 {{ index + 1 }}</span>
+            <el-button
+              v-if="personList.length > 1"
+              type="danger"
+              size="small"
+              :icon="Delete"
+              @click="removePerson(index)"
+              text
+            >
+              删除
+            </el-button>
+          </div>
+          <el-form :model="person" label-position="top">
+            <el-form-item label="真实姓名" required>
+              <el-input
+                v-model="person.realName"
+                placeholder="请输入真实姓名"
+                clearable
+              />
+            </el-form-item>
+            <el-form-item label="身份证号" required>
+              <el-input
+                v-model="person.idNo"
+                placeholder="请输入身份证号"
+                clearable
+                maxlength="18"
+              />
+            </el-form-item>
+            <el-form-item label="手机号" required>
+              <el-input
+                v-model="person.phone"
+                placeholder="请输入手机号"
+                clearable
+                maxlength="11"
+              />
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <el-button
+          type="primary"
+          :icon="Plus"
+          @click="addPerson"
+          style="width: 100%; margin-top: 12px"
+        >
+          添加预约人
+        </el-button>
+
+        <el-alert
+          v-if="batchQuotaInfo && personList.filter(p => p.realName && p.idNo && p.phone).length > batchQuotaInfo.remainingCount"
+          title="警告"
+          type="error"
+          :closable="false"
+          show-icon
+          style="margin-top: 16px"
+        >
+          填写完整信息的人数（{{ personList.filter(p => p.realName && p.idNo && p.phone).length }}）超过剩余名额（{{ batchQuotaInfo.remainingCount }}）
+        </el-alert>
+
+        <el-alert
+          title="温馨提示"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-top: 12px"
+        >
+          请确保每位预约人都已注册并完成实名认证，系统将通过身份证号和手机号匹配用户
+        </el-alert>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showBatchDialog = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleBatchCreate"
+          :loading="batchLoading"
+          :disabled="!batchDate || !batchQuotaInfo"
+        >
+          确定预约（{{ personList.filter(p => p.realName && p.idNo && p.phone).length }}人）
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -484,87 +731,6 @@ const handleLogout = async () => {
   background-color: #f5f5f5;
   display: flex;
   flex-direction: column;
-}
-
-/* Header 样式 */
-.header {
-  background-color: #b03128;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.header-content {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.back-button {
-  color: rgba(255, 255, 255, 0.9);
-  padding: 8px 12px;
-}
-
-.back-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.logo-text {
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.header-actions .el-button {
-  color: rgba(255, 255, 255, 0.9);
-  border: none;
-}
-
-.header-actions .el-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.user-dropdown {
-  margin-left: 0;
-}
-
-.user-dropdown-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 4px;
-  transition: background 0.3s;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.user-dropdown-info:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.user-info {
-  flex: 1;
-}
-
-.username {
-  font-size: 14px;
 }
 
 /* 主内容区 */
@@ -642,6 +808,16 @@ const handleLogout = async () => {
   border-radius: 8px;
 }
 
+.button-group {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.button-group .el-button {
+  flex: 1;
+}
+
 .tip-text {
   font-size: 12px;
   color: #999;
@@ -657,6 +833,61 @@ const handleLogout = async () => {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+/* 库存信息样式 */
+.quota-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  color: #999;
+  font-size: 14px;
+}
+
+.quota-info {
+  padding: 12px 0;
+}
+
+.quota-details {
+  margin-top: 12px;
+}
+
+.quota-details > div {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.user-count-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.user-count-hint strong {
+  color: #409eff;
+  font-size: 16px;
+}
+
+.person-form-item {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+}
+
+.person-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.person-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
 }
 
 /* 响应式 */

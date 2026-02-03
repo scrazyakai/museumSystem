@@ -109,6 +109,14 @@ const router = createRouter({
       meta: { requiresAuth: true, authType: 'admin' }
     },
 
+    // 库存管理（管理端）
+    {
+      path: '/admin/quota',
+      name: 'AdminQuotaManage',
+      component: () => import('@/views/admin/AdminQuotaManage.vue'),
+      meta: { requiresAuth: true, authType: 'admin' }
+    },
+
     // 根路径重定向到博物馆首页
     {
       path: '/',

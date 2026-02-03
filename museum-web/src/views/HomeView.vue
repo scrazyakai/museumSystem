@@ -2,11 +2,12 @@
 import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElCarousel, ElCarouselItem, ElTabs, ElTabPane, ElScrollbar, ElButton, ElMessage, ElMessageBox, ElDropdown, ElDropdownMenu } from 'element-plus'
-import { HomeFilled, Collection, SwitchButton, UserFilled } from '@element-plus/icons-vue'
+import { HomeFilled, Collection, SwitchButton, UserFilled, Tickets } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import { useAuthStore } from '@/store/auth'
 import { logout } from '@/api/auth'
+import AppHeader from '@/components/common/AppHeader.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -255,45 +256,6 @@ const gridItems = [
   { icon: '🎪', label: '便民服务', id: 'service' }
 ]
 
-// 处理下拉菜单命令
-const handleCommand = (command: string) => {
-  if (command === 'profile') {
-    goToProfile()
-  } else if (command === 'logout') {
-    handleLogout()
-  }
-}
-
-// 跳转到个人中心
-const goToProfile = () => {
-  router.push('/profile')
-}
-
-// 退出登录
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    // 调用退出登录接口
-    try {
-      await logout()
-    } catch (error) {
-      console.error('退出登录接口调用失败:', error)
-    }
-    
-    // 清除本地状态
-    authStore.clearUser()
-    ElMessage.success('已退出登录')
-    router.push('/login/user')
-  } catch {
-    // 用户取消
-  }
-}
-
 // 精品藏品图片列表
 const qualityImages = [
   { 
@@ -311,40 +273,7 @@ const qualityImages = [
 <template>
   <div class="museum-app">
     <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo">博物馆</div>
-        <div class="header-nav">
-          <el-button link @click="goToHome">
-            <el-icon><HomeFilled /></el-icon>
-            <span>首页</span>
-          </el-button>
-          <el-button link @click="goToItems">
-            <el-icon><Collection /></el-icon>
-            <span>展品</span>
-          </el-button>
-        </div>
-        <el-dropdown @command="handleCommand" class="user-dropdown">
-          <div class="user-info">
-            <el-avatar v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" :size="32" />
-            <el-avatar v-else :icon="UserFilled" :size="32" />
-            <span class="username">{{ userInfo?.nickname || userInfo?.username }}</span>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">
-                <el-icon><UserFilled /></el-icon>
-                个人中心
-              </el-dropdown-item>
-              <el-dropdown-item command="logout">
-                <el-icon><SwitchButton /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </header>
+    <AppHeader />
 
     <!-- Hero 区域 -->
     <div class="main-container">
@@ -422,7 +351,7 @@ const qualityImages = [
             <div class="rule-item">• 个人参观可通过官网或微信公众号提前预约</div>
             <div class="rule-item">• 团队参观需提前 3 个工作日预约</div>
             <div class="rule-item">• 预约成功后凭身份证或预约码入场</div>
-            <div class="rule-item">• 每日限额 5000 人，建议提前预约</div>
+            <div class="rule-item">• 每日限额 2000 人，建议提前预约</div>
             <div class="rule-item">• 预约时间：可预约 7 日内参观时段</div>
             <div class="rule-item">• 预约成功后请在规定时间内入场</div>
             <div class="rule-item">• 未按时入场需重新预约</div>
@@ -630,11 +559,20 @@ const qualityImages = [
 }
 
 .logo {
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
+  cursor: pointer;
   margin: 0;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.1);
+}
+
+.logo img {
+  display: block;
 }
 
 .header-actions {

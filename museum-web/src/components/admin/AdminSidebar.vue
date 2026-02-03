@@ -39,6 +39,11 @@
         <el-icon><Tickets /></el-icon>
         <template #title>预约管理</template>
       </el-menu-item>
+
+      <el-menu-item index="quota">
+        <el-icon><DataLine /></el-icon>
+        <template #title>库存管理</template>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -46,7 +51,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Platform, DataAnalysis, Collection, User, ChatDotRound, Tickets } from '@element-plus/icons-vue'
+import { Platform, DataAnalysis, Collection, User, ChatDotRound, Tickets, DataLine } from '@element-plus/icons-vue'
 
 const props = defineProps<{
   collapsed: boolean
@@ -65,6 +70,7 @@ const activeMenu = computed(() => {
   if (path === '/admin/users') return 'users'
   if (path === '/admin/comments') return 'comments'
   if (path === '/admin/bookings') return 'bookings'
+  if (path === '/admin/quota') return 'quota'
   if (path === '/admin') return 'dashboard'
   return 'dashboard'
 })
@@ -85,6 +91,9 @@ const handleSelect = (index: string) => {
       break
     case 'bookings':
       router.push('/admin/bookings')
+      break
+    case 'quota':
+      router.push('/admin/quota')
       break
   }
 }

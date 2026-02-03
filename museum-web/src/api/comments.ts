@@ -10,6 +10,8 @@ export interface Comment {
   content: string
   createdAt: string
   avatarURL?: string
+  liked: number // 0: 未点赞, 1: 已点赞
+  likecount: number // 点赞总数
 }
 
 // 发表评论请求参数
@@ -42,4 +44,18 @@ export function addComment(itemId: number, data: AddCommentRequest): Promise<num
  */
 export function deleteComment(commentId: number): Promise<void> {
   return http.delete(`/api/items/comments/${commentId}`)
+}
+
+/**
+ * 点赞评论
+ */
+export function likeComment(commentId: number): Promise<boolean> {
+  return http.post<boolean>(`/api/comment-like/like?commentId=${commentId}`) as any
+}
+
+/**
+ * 取消点赞评论
+ */
+export function unlikeComment(commentId: number): Promise<boolean> {
+  return http.post<boolean>(`/api/comment-like/cancel?commentId=${commentId}`) as any
 }
