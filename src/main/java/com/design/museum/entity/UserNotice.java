@@ -47,8 +47,6 @@ public class UserNotice implements Serializable {
      */
     private Integer readFlag;
 
-    private LocalDateTime readAt;
-
     /**
      * 0正常 1删除
      */
