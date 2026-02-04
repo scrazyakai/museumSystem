@@ -10,7 +10,7 @@ import {
   ElMessage,
   ElMessageBox
 } from 'element-plus'
-import { HomeFilled, Collection, Tickets, UserFilled, SwitchButton } from '@element-plus/icons-vue'
+import { HomeFilled, Collection, Tickets, UserFilled, SwitchButton, Bell } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/auth'
 import { logout } from '@/api/auth'
 
@@ -49,6 +49,8 @@ const goToBooking = () => {
 const handleCommand = async (command: string) => {
   if (command === 'profile') {
     router.push('/profile')
+  } else if (command === 'notices') {
+    router.push('/notices')
   } else if (command === 'logout') {
     try {
       await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -121,6 +123,10 @@ const handleCommand = async (command: string) => {
             <el-dropdown-item command="profile">
               <el-icon><UserFilled /></el-icon>
               个人中心
+            </el-dropdown-item>
+            <el-dropdown-item command="notices">
+              <el-icon><Bell /></el-icon>
+              消息通知
             </el-dropdown-item>
             <el-dropdown-item command="logout">
               <el-icon><SwitchButton /></el-icon>

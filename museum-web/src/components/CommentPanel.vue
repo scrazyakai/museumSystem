@@ -55,22 +55,7 @@
           <!-- 评论内容 -->
           <div class="comment-text">{{ comment.content }}</div>
 
-          <!-- 点赞按钮（右上角） -->
-          <div class="comment-like-button" @click="handleLike(comment.id)">
-            <img
-              :src="comment.liked === 1 ? '/icons/like-liked.png' : '/icons/like-unliked.png'"
-              :alt="comment.liked === 1 ? '已点赞' : '未点赞'"
-              class="like-icon"
-            />
-            <span :class="{ 'liked': comment.liked === 1 }" class="like-count">
-              {{ comment.likeCount ?? comment.likecount ?? 0 }}
-            </span>
-          </div>
-
-          <!-- 发布时间（右下角） -->
-          <div class="comment-time">{{ formatTime(comment.createdAt) }}</div>
-
-          <!-- 删除按钮 -->
+          <!-- 删除按钮（右上角） -->
           <el-button
             v-if="authStore.userInfo?.id === comment.userId"
             type="danger"
@@ -81,6 +66,24 @@
           >
             删除
           </el-button>
+
+          <!-- 点赞和时间（右下角） -->
+          <div class="comment-actions">
+            <!-- 点赞按钮 -->
+            <div class="comment-like-button" @click="handleLike(comment.id)">
+              <img
+                :src="comment.liked === 1 ? '/icons/like-liked.png' : '/icons/like-unliked.png'"
+                :alt="comment.liked === 1 ? '已点赞' : '未点赞'"
+                class="like-icon"
+              />
+              <span :class="{ 'liked': comment.liked === 1 }" class="like-count">
+                {{ comment.likeCount ?? comment.likecount ?? 0 }}
+              </span>
+            </div>
+
+            <!-- 发布时间 -->
+            <div class="comment-time">{{ formatTime(comment.createdAt) }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -391,11 +394,26 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 
-/* 点赞按钮 - 右上角 */
-.comment-like-button {
+/* 删除按钮 - 右上角 */
+.delete-button {
   position: absolute;
   top: 8px;
   right: 16px;
+  padding: 4px 8px;
+}
+
+/* 点赞和时间容器 - 右下角 */
+.comment-actions {
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 点赞按钮 */
+.comment-like-button {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -425,22 +443,10 @@ onMounted(() => {
   color: #B03128;
 }
 
-/* 时间 - 右下角 */
+/* 时间 */
 .comment-time {
-  position: absolute;
-  bottom: 8px;
-  right: 16px;
   font-size: 12px;
   color: #999;
-  margin-top: 8px;
-}
-
-/* 删除按钮 */
-.delete-button {
-  position: absolute;
-  bottom: 8px;
-  left: 16px;
-  padding: 4px 8px;
 }
 
 /* 分页 */

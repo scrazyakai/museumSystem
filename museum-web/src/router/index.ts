@@ -69,6 +69,22 @@ const router = createRouter({
       meta: { requiresAuth: true, authType: 'user' }
     },
 
+    // 消息通知列表（用户端）
+    {
+      path: '/notices',
+      name: 'NoticeList',
+      component: () => import('@/views/notice/NoticeListView.vue'),
+      meta: { requiresAuth: true, authType: 'user' }
+    },
+
+    // 消息通知详情（用户端）
+    {
+      path: '/notices/:id',
+      name: 'NoticeDetail',
+      component: () => import('@/views/notice/NoticeDetailView.vue'),
+      meta: { requiresAuth: true, authType: 'user' }
+    },
+
     // 管理员首页及其子路由
     {
       path: '/admin',
