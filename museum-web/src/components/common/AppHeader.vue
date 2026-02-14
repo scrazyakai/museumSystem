@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   ElButton,
   ElDropdown,
@@ -10,13 +11,21 @@ import {
   ElMessage,
   ElMessageBox
 } from 'element-plus'
-import { HomeFilled, Collection, Tickets, UserFilled, SwitchButton, Bell } from '@element-plus/icons-vue'
+import { HomeFilled, Collection, Tickets, UserFilled, SwitchButton, Bell, VideoCamera } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/auth'
 import { logout } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { locale, t } = useI18n()
+
+// 切换语言
+const changeLanguage = (lang: string) => {
+  locale.value = lang
+  localStorage.setItem('locale', lang)
+  location.reload()
+}
 
 // 用户信息
 const userInfo = computed(() => authStore.userInfo)
@@ -45,6 +54,11 @@ const goToBooking = () => {
   router.push('/booking')
 }
 
+// 跳转到直播页面
+const goToLive = () => {
+  router.push('/live')
+}
+
 // 处理下拉菜单命令
 const handleCommand = async (command: string) => {
   if (command === 'profile') {
@@ -53,15 +67,15 @@ const handleCommand = async (command: string) => {
     router.push('/notices')
   } else if (command === 'logout') {
     try {
-      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      await ElMessageBox.confirm(t('common.logoutConfirm'), '提示', {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning'
       })
 
       await logout()
       authStore.clearUser()
-      ElMessage.success('已退出登录')
+      ElMessage.success(t('common.logoutSuccess'))
       router.push('/login/user')
     } catch {
       // 用户取消
@@ -91,7 +105,7 @@ const handleCommand = async (command: string) => {
           @click="goToHome"
         >
           <el-icon><HomeFilled /></el-icon>
-          <span>首页</span>
+          <span>{{ t('common.home') }}</span>
         </el-button>
         <el-button
           link
@@ -99,7 +113,7 @@ const handleCommand = async (command: string) => {
           @click="goToItems"
         >
           <el-icon><Collection /></el-icon>
-          <span>展品</span>
+          <span>{{ t('common.exhibitions') }}</span>
         </el-button>
         <el-button
           link
@@ -107,9 +121,30 @@ const handleCommand = async (command: string) => {
           @click="goToBooking"
         >
           <el-icon><Tickets /></el-icon>
-          <span>预约</span>
+          <span>{{ t('common.booking') }}</span>
+        </el-button>
+        <el-button
+          link
+          :class="{ active: isActive('/live') }"
+          @click="goToLive"
+        >
+          <el-icon><VideoCamera /></el-icon>
+          <span>{{ t('common.live') }}</span>
         </el-button>
       </div>
+
+      <!-- 语言切换 -->
+      <el-dropdown @command="changeLanguage" class="language-dropdown">
+        <div class="language-selector">
+          <span>{{ locale === 'zh' ? '中文' : 'EN' }}</span>
+        </div>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="zh">中文</el-dropdown-item>
+            <el-dropdown-item command="en">English</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
 
       <!-- 用户信息下拉菜单 -->
       <el-dropdown @command="handleCommand" class="user-dropdown">
@@ -122,15 +157,15 @@ const handleCommand = async (command: string) => {
           <el-dropdown-menu>
             <el-dropdown-item command="profile">
               <el-icon><UserFilled /></el-icon>
-              个人中心
+              {{ t('common.profile') }}
             </el-dropdown-item>
             <el-dropdown-item command="notices">
               <el-icon><Bell /></el-icon>
-              消息通知
+              {{ t('common.notices') }}
             </el-dropdown-item>
             <el-dropdown-item command="logout">
               <el-icon><SwitchButton /></el-icon>
-              退出登录
+              {{ t('common.logout') }}
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -229,6 +264,27 @@ const handleCommand = async (command: string) => {
 
 .username {
   font-size: 14px;
+}
+
+/* 语言选择器 */
+.language-dropdown {
+  margin-left: 16px;
+}
+
+.language-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background 0.3s;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.language-selector:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* 响应式 */

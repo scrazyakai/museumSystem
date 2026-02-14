@@ -61,6 +61,14 @@ const router = createRouter({
       meta: { requiresAuth: true, authType: 'user' }
     },
 
+    // 在线直播（用户端）
+    {
+      path: '/live',
+      name: 'LiveView',
+      component: () => import('@/views/live/LiveView.vue'),
+      meta: { requiresAuth: true, authType: 'user' }
+    },
+
     // 个人中心（用户端）
     {
       path: '/profile',

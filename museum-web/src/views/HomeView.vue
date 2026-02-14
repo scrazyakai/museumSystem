@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElCarousel, ElCarouselItem, ElTabs, ElTabPane, ElScrollbar, ElButton, ElMessage, ElMessageBox, ElDropdown, ElDropdownMenu } from 'element-plus'
 import { HomeFilled, Collection, SwitchButton, UserFilled, Tickets } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -11,6 +12,7 @@ import AppHeader from '@/components/common/AppHeader.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t, locale } = useI18n()
 
 // 用户信息
 const userInfo = computed(() => authStore.userInfo)
@@ -23,19 +25,30 @@ const activeFloor = ref('1&2')
 let mapChart = null
 const chartRef = ref(null)
 
-const floors = [
-  { label: '1&2层', value: '1&2' },
-  { label: '3层', value: '3' },
-  { label: '4层', value: '4' }
-]
+const floors = computed(() => [
+  { label: t('home.floor1And2'), value: '1&2' },
+  { label: t('home.floor3'), value: '3' },
+  { label: t('home.floor4'), value: '4' }
+])
 
 onMounted(() => {
   const now = dayjs()
   currentDate.value = now.format('YYYY-MM-DD')
-  weekday.value = now.format('dddd')
+
+  // 根据当前语言设置星期显示
+  updateWeekday(now)
 
   initMapChart()
 })
+
+// 更新星期显示
+const updateWeekday = (now: dayjs.Dayjs) => {
+  const day = now.day()
+  const weekdays = locale.value === 'zh'
+    ? ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+    : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  weekday.value = weekdays[day]
+}
 
 const initMapChart = async () => {
   await nextTick()
@@ -95,9 +108,9 @@ const updateMapChart = () => {
         onclick: () => {
           let message = ''
           if (activeFloor.value === '4') {
-            message = '北区展厅：多媒体互动区'
+            message = t('home.northAreaMultimedia')
           } else {
-            message = '北区展厅：复兴之路'
+            message = t('home.northAreaExhibition')
           }
           ElMessage({
             message: message,
@@ -111,7 +124,7 @@ const updateMapChart = () => {
         top: 120,
         z: 2,
         style: {
-          text: '北区',
+          text: t('home.northArea'),
           fill: '#fff',
           fontSize: 16,
           fontWeight: 'bold'
@@ -140,7 +153,7 @@ const updateMapChart = () => {
         cursor: 'pointer',
         onclick: () => {
           ElMessage({
-            message: '南区展厅：书画艺术展',
+            message: t('home.southAreaExhibition'),
             type: 'success'
           })
         }
@@ -151,7 +164,7 @@ const updateMapChart = () => {
         top: 120,
         z: 2,
         style: {
-          text: '南区',
+          text: t('home.southArea'),
           fill: '#fff',
           fontSize: 16,
           fontWeight: 'bold'
@@ -180,7 +193,7 @@ const updateMapChart = () => {
         cursor: 'pointer',
         onclick: () => {
           ElMessage({
-            message: '中央大厅',
+            message: t('home.centralHall'),
             type: 'success'
           })
         }
@@ -191,7 +204,7 @@ const updateMapChart = () => {
         top: 320,
         z: 2,
         style: {
-          text: '中央大厅',
+          text: t('home.centralHall'),
           fill: '#fff',
           fontSize: 16,
           fontWeight: 'bold'
@@ -247,27 +260,30 @@ const scrollToSection = (id) => {
 }
 
 // 右侧网格数据
-const gridItems = [
-  { icon: '🕐', label: '开放时间', id: 'time' },
-  { icon: '📅', label: '参观预约', id: 'booking' },
-  { icon: '🗺️', label: '展厅分布', id: 'map' },
-  { icon: '📚', label: '馆藏精品', id: 'collection' },
-  { icon: '🔔', label: '参观须知', id: 'rules' },
-  { icon: '🎪', label: '便民服务', id: 'service' }
-]
+const gridItems = computed(() => [
+  { icon: '🕐', label: t('home.openTime'), id: 'time' },
+  { icon: '📅', label: t('home.visitBooking'), id: 'booking' },
+  { icon: '🗺️', label: t('home.exhibitionMap'), id: 'map' },
+  { icon: '📚', label: t('home.collection'), id: 'collection' },
+  { icon: '🔔', label: t('home.visitRules'), id: 'rules' },
+  { icon: '🎪', label: t('home.services'), id: 'service' }
+])
 
 // 精品藏品图片列表
-const qualityImages = [
-  { 
-    image: '/quality/2023111510240326308.png', name: '金杖'
+const qualityImages = computed(() => [
+  {
+    image: '/quality/2023111510240326308.png',
+    name: locale.value === 'zh' ? '金杖' : 'Golden Staff'
   },
-  { 
-    image: '/quality/2023111510263323992.png', name: '祭山图玉璋'
+  {
+    image: '/quality/2023111510263323992.png',
+    name: locale.value === 'zh' ? '祭山图玉璋' : 'Jade Zhang with Mountain Sacrifice Scene'
   },
-  { 
-    image: '/quality/2023111510321052665.png', name: '青铜神树' 
+  {
+    image: '/quality/2023111510321052665.png',
+    name: locale.value === 'zh' ? '青铜神树' : 'Bronze Sacred Tree'
   }
-]
+])
 </script>
 
 <template>
@@ -293,7 +309,7 @@ const qualityImages = [
               </div>
             </ElCarouselItem>
           </ElCarousel>
-          <div class="thumbnail-label">精品藏品</div>
+          <div class="thumbnail-label">{{ t('home.qualityItems') }}</div>
         </div>
       </div>
 
@@ -330,12 +346,12 @@ const qualityImages = [
       <div id="time" class="module">
         <div class="module-title">
           <div class="title-decoration"></div>
-          <h2>开放时间</h2>
+          <h2>{{ t('home.openingHours') }}</h2>
         </div>
         <div class="module-content">
-          <p>周二至周日：9:00 - 17:00（16:00 停止入场）</p>
-          <p>周一闭馆（法定节假日除外）</p>
-          <p>春节期间开放时间另行通知</p>
+          <p>{{ t('home.weekdayTuesdayToSunday') }}：{{ t('home.time') }}（{{ t('home.stopEntry') }}）</p>
+          <p>{{ t('home.weekdayMonday') }} {{ t('home.closed') }} {{ t('home.exceptHolidays') }}</p>
+          <p>{{ t('home.springNotice') }}</p>
         </div>
       </div>
 
@@ -343,28 +359,28 @@ const qualityImages = [
       <div id="booking" class="module">
         <div class="module-title">
           <div class="title-decoration"></div>
-          <h2>参观预约</h2>
+          <h2>{{ t('home.visitBooking') }}</h2>
         </div>
         <div class="booking-layout">
           <div class="booking-left">
-            <div class="rule-title">预约规则</div>
-            <div class="rule-item">• 个人参观可通过官网或微信公众号提前预约</div>
-            <div class="rule-item">• 团队参观需提前 3 个工作日预约</div>
-            <div class="rule-item">• 预约成功后凭身份证或预约码入场</div>
-            <div class="rule-item">• 每日限额 2000 人，建议提前预约</div>
-            <div class="rule-item">• 预约时间：可预约 7 日内参观时段</div>
-            <div class="rule-item">• 预约成功后请在规定时间内入场</div>
-            <div class="rule-item">• 未按时入场需重新预约</div>
-            <div class="rule-item">• 取消预约请提前 24 小时操作</div>
-            <div class="rule-item">• 预约信息需真实有效</div>
-            <div class="rule-item">• 优惠票需出示相关证件</div>
+            <div class="rule-title">{{ t('home.bookingRules') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule1') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule2') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule3') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule4') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule5') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule6') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule7') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule8') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule9') }}</div>
+            <div class="rule-item">{{ t('home.bookingRule10') }}</div>
           </div>
           <div class="booking-right">
             <div class="booking-info">
-              <div class="info-title">温馨提示</div>
-              <div class="info-content">如遇特殊情况，博物馆保留调整开放时间及预约规则的权利</div>
+              <div class="info-title">{{ t('home.bookingNotice') }}</div>
+              <div class="info-content">{{ t('home.bookingNoticeContent') }}</div>
             </div>
-            <ElButton type="danger" size="large" class="booking-button" @click="goToBooking">预约入口</ElButton>
+            <ElButton type="danger" size="large" class="booking-button" @click="goToBooking">{{ t('home.bookingEntrance') }}</ElButton>
           </div>
         </div>
       </div>
@@ -373,70 +389,70 @@ const qualityImages = [
       <div id="rules" class="module">
         <div class="module-title">
           <div class="title-decoration"></div>
-          <h2>参观须知</h2>
+          <h2>{{ t('home.visitRules') }}</h2>
         </div>
         <ElTabs v-model="activeTab" class="rules-tabs">
-          <ElTabPane label="文明参观须知" name="civilized">
+          <ElTabPane :label="t('home.civilizedRules')" name="civilized">
             <ElScrollbar height="300px">
               <div class="tab-content">
-                <p>• 请自觉遵守参观秩序，保持安静，不得大声喧哗</p>
-                <p>• 请勿触摸展品，保持安全距离</p>
-                <p>• 拍照时请关闭闪光灯，部分展区禁止拍照</p>
-                <p>• 请勿在展厅内奔跑、追逐或进行其他危险行为</p>
-                <p>• 请爱护公共设施，保持展厅清洁</p>
-                <p>• 参观时请将手机调至静音或震动模式</p>
-                <p>• 请尊重其他参观者，避免长时间占用观展位置</p>
-                <p>• 禁止在展厅内吸烟、饮食</p>
-                <p>• 请听从工作人员指引，遵守馆内秩序</p>
-                <p>• 如遇紧急情况，请听从工作人员指挥有序撤离</p>
+                <p>{{ t('home.civilizedRule1') }}</p>
+                <p>{{ t('home.civilizedRule2') }}</p>
+                <p>{{ t('home.civilizedRule3') }}</p>
+                <p>{{ t('home.civilizedRule4') }}</p>
+                <p>{{ t('home.civilizedRule5') }}</p>
+                <p>{{ t('home.civilizedRule6') }}</p>
+                <p>{{ t('home.civilizedRule7') }}</p>
+                <p>{{ t('home.civilizedRule8') }}</p>
+                <p>{{ t('home.civilizedRule9') }}</p>
+                <p>{{ t('home.civilizedRule10') }}</p>
               </div>
             </ElScrollbar>
           </ElTabPane>
-          <ElTabPane label="禁限带物品" name="prohibited">
+          <ElTabPane :label="t('home.prohibitedItems')" name="prohibited">
             <ElScrollbar height="300px">
               <div class="tab-content">
-                <p>• 禁止携带易燃、易爆、易腐蚀等危险品</p>
-                <p>• 禁止携带管制刀具等违禁物品</p>
-                <p>• 禁止携带宠物（导盲犬除外）</p>
-                <p>• 禁止携带食品、饮料入馆</p>
-                <p>• 禁止携带自拍杆、三脚架等摄影器材</p>
-                <p>• 限制携带大件行李、背包（超过 A4 纸大小）</p>
-                <p>• 限制携带液体超过 500ml</p>
-                <p>• 限制携带专业录音录像设备</p>
-                <p>• 禁止携带滑板、平衡车等代步工具</p>
-                <p>• 未经许可不得携带无人机等航拍设备</p>
+                <p>{{ t('home.prohibitedItem1') }}</p>
+                <p>{{ t('home.prohibitedItem2') }}</p>
+                <p>{{ t('home.prohibitedItem3') }}</p>
+                <p>{{ t('home.prohibitedItem4') }}</p>
+                <p>{{ t('home.prohibitedItem5') }}</p>
+                <p>{{ t('home.prohibitedItem6') }}</p>
+                <p>{{ t('home.prohibitedItem7') }}</p>
+                <p>{{ t('home.prohibitedItem8') }}</p>
+                <p>{{ t('home.prohibitedItem9') }}</p>
+                <p>{{ t('home.prohibitedItem10') }}</p>
               </div>
             </ElScrollbar>
           </ElTabPane>
-          <ElTabPane label="寄存须知" name="storage">
+          <ElTabPane :label="t('home.storageRules')" name="storage">
             <ElScrollbar height="300px">
               <div class="tab-content">
-                <p>• 本馆提供免费寄存服务</p>
-                <p>• 寄存物品需自行妥善保管物品凭证</p>
-                <p>• 寄存时间不超过 24 小时</p>
-                <p>• 不得寄存贵重物品（现金、珠宝等）</p>
-                <p>• 不得寄存易燃易爆、有毒有害物品</p>
-                <p>• 不得寄存活体动植物</p>
-                <p>• 寄存柜使用前请检查是否完好</p>
-                <p>• 遗失凭证需出示有效身份证明</p>
-                <p>• 超时未取的物品将按规定处理</p>
-                <p>• 任何寄存物品损坏或丢失本馆不承担责任</p>
+                <p>{{ t('home.storageRule1') }}</p>
+                <p>{{ t('home.storageRule2') }}</p>
+                <p>{{ t('home.storageRule3') }}</p>
+                <p>{{ t('home.storageRule4') }}</p>
+                <p>{{ t('home.storageRule5') }}</p>
+                <p>{{ t('home.storageRule6') }}</p>
+                <p>{{ t('home.storageRule7') }}</p>
+                <p>{{ t('home.storageRule8') }}</p>
+                <p>{{ t('home.storageRule9') }}</p>
+                <p>{{ t('home.storageRule10') }}</p>
               </div>
             </ElScrollbar>
           </ElTabPane>
-          <ElTabPane label="收费标准" name="charges">
+          <ElTabPane :label="t('home.charges')" name="charges">
             <ElScrollbar height="300px">
               <div class="tab-content">
-                <p>• 基本展览：免费参观</p>
-                <p>• 特殊展览：根据展览内容定价</p>
-                <p>• 讲解服务：免费（需提前预约）</p>
-                <p>• 讲解器租赁：20 元/台/次</p>
-                <p>• 讲解器押金：100 元（归还时退还）</p>
-                <p>• 轮椅借用：免费（需押金 200 元）</p>
-                <p>• 婴儿车借用：免费（需押金 200 元）</p>
-                <p>• 导览册：免费领取</p>
-                <p>• 停车费用：5 元/小时（前 2 小时免费）</p>
-                <p>• 文创商品：按标价出售</p>
+                <p>{{ t('home.charge1') }}</p>
+                <p>{{ t('home.charge2') }}</p>
+                <p>{{ t('home.charge3') }}</p>
+                <p>{{ t('home.charge4') }}</p>
+                <p>{{ t('home.charge5') }}</p>
+                <p>{{ t('home.charge6') }}</p>
+                <p>{{ t('home.charge7') }}</p>
+                <p>{{ t('home.charge8') }}</p>
+                <p>{{ t('home.charge9') }}</p>
+                <p>{{ t('home.charge10') }}</p>
               </div>
             </ElScrollbar>
           </ElTabPane>
@@ -447,7 +463,7 @@ const qualityImages = [
       <div id="map" class="module">
         <div class="module-title">
           <div class="title-decoration"></div>
-          <h2>展厅分布</h2>
+          <h2>{{ t('home.exhibitionDistribution') }}</h2>
         </div>
         <div class="floor-controls">
           <div
@@ -466,18 +482,18 @@ const qualityImages = [
       <div id="collection" class="module">
         <div class="module-title">
           <div class="title-decoration"></div>
-          <h2>馆藏精品</h2>
+          <h2>{{ t('home.qualityCollection') }}</h2>
         </div>
         <div class="module-content">
-          <p>• 青铜器：商代晚期青铜器精品</p>
-          <p>• 瓷器珍品：宋代名窑瓷器展示</p>
-          <p>• 书画作品：明清名家书画真迹</p>
-          <p>• 玉器收藏：新石器时代至清代玉器</p>
-          <p>• 金银器：历代宫廷金银器皿</p>
+          <p>{{ t('home.qualityCollectionDesc1') }}</p>
+          <p>{{ t('home.qualityCollectionDesc2') }}</p>
+          <p>{{ t('home.qualityCollectionDesc3') }}</p>
+          <p>{{ t('home.qualityCollectionDesc4') }}</p>
+          <p>{{ t('home.qualityCollectionDesc5') }}</p>
         </div>
         <div class="module-action">
           <el-button type="primary" size="large" @click="goToItems">
-            查看更多展品
+            {{ t('home.viewMoreItems') }}
           </el-button>
         </div>
       </div>
@@ -486,13 +502,13 @@ const qualityImages = [
       <div id="service" class="module">
         <div class="module-title">
           <div class="title-decoration"></div>
-          <h2>便民服务</h2>
+          <h2>{{ t('home.convenientServices') }}</h2>
         </div>
         <div class="module-content">
-          <p>提供免费寄存服务</p>
-          <p>轮椅、婴儿车可免费借用</p>
-          <p>设有母婴室和无障碍通道</p>
-          <p>提供讲解器租赁服务（需押金）</p>
+          <p>{{ t('home.serviceDesc1') }}</p>
+          <p>{{ t('home.serviceDesc2') }}</p>
+          <p>{{ t('home.serviceDesc3') }}</p>
+          <p>{{ t('home.serviceDesc4') }}</p>
         </div>
       </div>
     </div>
